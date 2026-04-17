@@ -1,13 +1,14 @@
 ---
 name: vitamin-analyzer
-description: Analyze dietary supplements (single product OR multi-product stack) for RDA/UL balance, duplicate ingredients, interactions, and evidence-based recommendations. Supports multiple user-named profiles (self, family, friends) and three intent modes (quick_check / quick_replace / full_analysis) to match response depth to question depth. Activates when the user provides a supplement name, ingredient list, or photo of a Supplement Facts label — optionally with a personal profile (gender, age, symptoms, pregnancy, prescription drugs). Returns a Korean (default) or English markdown report with evidence URLs from NIH ODS/PubMed/Cochrane/Examine, 5 domestic + 3 overseas (iHerb) alternative products, and an auto-inserted medical disclaimer. Persists product DB, stack JSON, and reports under ./user-data/. Does not analyze products for under-12 or pets. Does not issue prescription drug dosing advice.
+description: Help users audit their supplement stack and answer the quiet question behind every vitamin bottle — "Am I actually covering what I need? Am I doubling up? Is anything over the upper limit?" Guides the user on a journey to optimize their vitamin portfolio with evidence-based analysis. Activates when the user shares a supplement name, ingredient list, or Supplement Facts label photo, optionally with personal context (age, biological sex, symptoms, pregnancy, prescription drugs). Returns a Korean (default) or English markdown report covering RDA gaps, UL overages, duplicate ingredients, drug/supplement interactions, and 5 domestic + 3 overseas (iHerb) alternative products — every medical claim backed by Tier 1–2 citations from the U.S. National Institutes of Health Office of Dietary Supplements (NIH ODS), PubMed (National Library of Medicine), Cochrane Library systematic reviews, and Examine.com. Supports multiple user-named profiles (self, family, friends) and three intent modes (quick_check / quick_replace / full_analysis) to match answer depth to question depth. Persists product DB, stack JSON, and reports under ./user-data/. Declines analyses for under-12 and pets; never issues prescription-drug dosing advice.
 license: MIT
 version: 1.1.3
 ---
 
 # Vitamin Analyzer — 보충제 분석 Skill
 
-> 사용자의 프로필(선택)과 복용 중인 보충제(텍스트/이미지/제품명)를 입력받아 성분 균형·과다·부족·상호작용을 근거 기반으로 분석하고, 국내 5 + 해외 3 대체제품과 가격을 제시합니다.
+> **"지금 먹는 비타민, 정말 나한테 맞는 걸까?"**
+> 부족한 건 없는지, 뭘 중복으로 먹고 있지는 않은지, 상한선을 넘긴 성분은 없는지 — 내 비타민 포트폴리오를 근거 기반으로 점검하고 최적의 조합을 찾아가는 **탐색 여정**을 돕는 Claude Skill. 프로필(선택)과 복용 제품(텍스트/라벨 사진/제품명)을 받아 UL 초과·RDA 미달·중복·상호작용을 평가하고, 국내 5 + 해외 3 대체제품을 가격·근거와 함께 제시합니다.
 
 ---
 
@@ -53,7 +54,7 @@ version: 1.1.3
 - **여러 제품을 한번에 분석하려면 모두 나열하거나 사진을 여러 장 올려주세요**
 ```
 
-### 2-1-A. 제품 완전성 재확인 루프 (v1.0.1 신규)
+### 2-1-A. 제품 완전성 재확인 루프
 
 사용자가 제품 목록을 제시한 **직후**, 아래 확인 질문을 **반드시** 실행 (생략 금지):
 
@@ -245,12 +246,12 @@ Step A: 사용자 라벨 사진 요청 (최우선, v1.1)
   - 사진 제공 시 → prompts/parse-image.md로 즉시 JSON 추출 → Step X로
   - 없으면 Step B로
 
-Step B: user-data/products/ DB 재사용 (v1.1)
+Step B: user-data/products/ DB 재사용
   - product_key 매칭 (brand_slug + product_slug)
   - verified_at 365일 이내 + confidence ≥ medium이면 재사용
   - DB에 있으면 → Step X로 (네트워크 호출 0건)
 
-Step C: Perplexity MCP 조회 (v1.1)
+Step C: Perplexity MCP 조회
   - perplexity_research("{브랜드} {제품명} 전성분 함량 mg µg") 호출
   - 한국어 제품명 검색에서 WebSearch보다 정확도 우수
   - 출처 URL이 명시되지 않으면 confidence: "low"
@@ -366,7 +367,7 @@ Step X (공통, v1.1): 성공 시 user-data/products/{key}.json에 저장
    - `prescription_drug_present: true` → §3-3 배너
    - `ul_exceeded.length > 0` → §3-4 배너
 3. `{{DISCLAIMER}}`는 `references/disclaimer.md` §1(한) / §2(영) 자동 삽입 — 수정·축약 금지
-4. `{{PROFILE_NAME}}` 마커 치환 (v1.1) — "{display_name}" 형식
+4. `{{PROFILE_NAME}}` 마커 치환 — "{display_name}" 형식
 5. `{{UL_EXCEEDED_SECTION}}` — UL 초과/근접 상세 (`ref/deficiency-excess-effects.md` 카탈로그 연결)
 6. `{{DEFICIENCY_SECTION}}` — RDA 미달 상세 (부족 건강 영향 + 식단 보완)
 7. **원본 성분 JSON 백업** (v1.1 신규, L9 교훈):
@@ -382,7 +383,7 @@ Step X (공통, v1.1): 성공 시 user-data/products/{key}.json에 저장
    - 실패 시 plain 파일 복사로 fallback
 10. 사용자에게 리포트 전문 노출 + 저장 경로 알림 (`{{FILE_SAVED_PATH}}`)
 
-**모드별 축약 규칙** (v1.1):
+**모드별 축약 규칙**:
 - `quick_check` — Phase 6는 **대화 내 응답만**, 파일 저장 없음 (Step 7/8/9 모두 스킵). `{{SUGGESTION}}` 마커만 사용
 - `quick_replace` — 대체후보 표만 저장 선택 가능 (사용자가 "저장해줘" 할 때만). Step 7(stack 백업)은 건너뜀
 - `full_analysis` — 위 10단계 전체 실행
@@ -565,38 +566,17 @@ Claude:
 | `prompts/parse-image.md` | 이미지 판독 JSON 스키마 | 1 |
 | `prompts/analyze-ingredient.md` | 정규화→합산→플래그→근거 7단계 | 2, 3, 4 |
 | `prompts/report-template.md` | 마크다운 리포트 템플릿 | 6 |
-| `references/deficiency-excess-effects.md` | 28영양소 부족·초과 건강 영향 카탈로그 (v1.0.1) | 3, 4, 6 |
-| `prompts/detect-profile.md` | 관계 키워드 → profile_id 라우팅 (v1.1) | 0 |
-| `prompts/detect-intent.md` | 3모드 인텐트 분류 (v1.1) | 0.5 |
-| `references/user-data-schema.md` | user-data/ JSON 스키마 5종 + 명명 규칙 (v1.1) | 0, 1, 6 |
-| `references/bioavailability-table.md` | 동일 성분 다른 형태 흡수율 비교 (v1.1) | 5 |
+| `references/deficiency-excess-effects.md` | 28영양소 부족·초과 건강 영향 카탈로그 | 3, 4, 6 |
+| `prompts/detect-profile.md` | 관계 키워드 → profile_id 라우팅 | 0 |
+| `prompts/detect-intent.md` | 3모드 인텐트 분류 | 0.5 |
+| `references/user-data-schema.md` | user-data/ JSON 스키마 5종 + 명명 규칙 | 0, 1, 6 |
+| `references/bioavailability-table.md` | 동일 성분 다른 형태 흡수율 비교 | 5 |
 
 ---
 
 ## 12. 버전
 
-- **v1.0.0** (2026-04) — 초기 릴리즈
-  - 단일 제품 + **복수 제품 스택 최적화**
-  - 100종 canonical, 28 RDA 영양소, 20 상호작용 패턴
-  - 국내 5 + 해외 3 대체제품
-  - 한국어 기본 + `--en` 영어 옵션
-  - 자동 면책 삽입 + 4종 조건부 경고 배너
-- **v1.0.1** (2026-04-17) — 실사용 테스트 피드백 반영 (patch)
-  - **제품 완전성 재확인 루프** (Phase 1): 빠진 제품 8개 카테고리 체크리스트
-  - **제품명 5단계 Fallback** (Phase 1): 공식몰 → 쇼핑몰 → 식약처 건기식DB → iHerb → 사용자 재질문
-  - **RDA 미달 분석** (Phase 3): `deficiency_gap[]` — 28영양소 전수 검토, 증상 기반 경계선 포함
-  - **부족·초과 건강 영향 카탈로그**: `references/deficiency-excess-effects.md` 신설 (28영양소 각각 단기/장기 증상·위험 임계값·고위험군)
-  - **리포트 자동 .md 저장** (Phase 6): `./reports/YYYY-MM-DD_HHMM_analysis.md` — PDF 생략
-  - 리포트 섹션 순서 재정렬: UL 상세 → 부족 상세 → 상호작용 → 스택 최적화
-- **v1.1.0** (2026-04-17) — 다중 프로필 + 인텐트 라우팅 + 크롤링 근본 개선 (minor)
-  - **다중 프로필**: 사용자가 이름 지정한 프로필 무제한 (본인/엄마/아내/친구…). 관계 키워드 자동 감지 + 확인
-  - **인텐트 라우팅 (3모드)**: quick_check / quick_replace / full_analysis. 모호 시 라이트 모드 편향, 풀 분석 강제 유도 금지
-  - **Fallback Chain 재배치** (Phase 1 §4-1-3): 라벨 사진 → DB 재사용 → Perplexity → 공식몰 → 식약처 → iHerb → 사용자 재질문 (v1.0.1 대비 상위 2단계 신설)
-  - **제품 DB 누적**: `user-data/products/{brand}_{product}.json`, 365일 재사용
-  - **원본 성분 JSON 백업**: `user-data/stacks/{profile_id}_latest.json` — /compact 후 수치 소실 방지 (L9)
-  - **latest.md 심볼릭 링크** + **저장 실패 배너** (Phase 6)
-  - **흡수율 테이블**: `references/bioavailability-table.md` — 대체제품 추천 근거
-  - 저장 경로 변경: `./reports/` → `./user-data/reports/{profile_id}/`
+상세 변경 이력은 [`CHANGELOG.md`](CHANGELOG.md) 참조.
 
 ---
 
