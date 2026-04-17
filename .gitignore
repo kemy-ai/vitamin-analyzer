@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# 사용자 데이터 (스킬 실행 중 자동 생성)
+user-data/
+
+# 에디터
+.vscode/
+.idea/
+*.swp
+
+# 로그
+*.log
