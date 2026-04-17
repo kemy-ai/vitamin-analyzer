@@ -11,3 +11,13 @@ user-data/
 
 # 로그
 *.log
+
+# 시크릿 (실수 방지용 이중 방어)
+.env
+.env.local
+.env.*
+.kfda-test-keys
+*test-keys*
+*.pem
+*.key
+secrets/

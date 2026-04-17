@@ -52,6 +52,33 @@ Claude Code가 `SKILL.md` 프론트매터의 `name: vitamin-analyzer`를 자동 
 
 > 참고: Skill 업로드 UI는 Claude 계정 등급에 따라 제공 여부가 다를 수 있습니다.
 
+### 2-3. 식약처 Open API 연동 (선택 — 한국 제품 분석 품질 향상)
+
+한국 건강기능식품을 **제품명만으로 정확히 식별**하고 싶다면 식약처 Open API 키를 설정하세요. 미설정 시에도 스킬은 정상 동작하며, Perplexity·공식몰·iHerb 체인으로 폴백합니다.
+
+**1) 키 발급 (무료)**
+- <https://data.go.kr> 회원가입 → "건강기능식품 정보" 검색 → 활용 신청 → `KFDA_HTFS_KEY` (64자 hex) 수령
+- <https://openapi.foodsafetykorea.go.kr> 별도 회원가입 → `C003` / `I0030` / `I2710` 각각 활용 신청 → `KFDA_FOODSAFETY_KEY` (20자) 수령
+- 승인 후 1~2시간 대기 (전파 지연)
+
+**2) 환경변수 설정**
+```bash
+# ~/.zshrc 또는 .env
+export KFDA_HTFS_KEY="..."          # data.go.kr 64자
+export KFDA_FOODSAFETY_KEY="..."    # foodsafetykorea 20자
+```
+
+**3) 스킬 파일에 키 하드코딩 금지**
+로컬 테스트용 별도 파일(`.kfda-test-keys`)에만 보관. `.gitignore` + `chmod 600` 필수.
+
+**제공 기능**:
+- C003 API: 국내 건강기능식품 6만+ 제품 성분·함량·용법 (정부 공식 DB)
+- I2710 API: 원료별 1일 섭취량 하한/상한 522종 (한국 공식 UL)
+- 5건 이하 후보 → 리스트 제시 / 6건+ → 제조사·제형·함량 좁히기 질문
+- 라벨 사진 업로드 시 교차검증 (**라벨 값이 ground truth**, API 차이는 리뉴얼 가능성 정보로 병기)
+
+상세 규칙: [`references/kfda-htfs-api.md`](references/kfda-htfs-api.md)
+
 ---
 
 ## 3. 빠른 사용 예
@@ -123,11 +150,14 @@ vitamin-analyzer/
 │   ├── search-templates.md          # Tier 1~3 WebSearch 쿼리 템플릿
 │   ├── interaction-patterns.md      # 20종 상호작용 (약물 12 + 보충제 5 + 음식 3)
 │   ├── user-data-schema.md          # profiles/products/stacks/reports JSON 스키마
+│   ├── kfda-htfs-api.md             # 식약처 Open API 4종 엔드포인트·필드·교차검증 규칙
+│   ├── korean-intake-limits.md      # I2710 큐레이션 (28영양소 + 기능성 12종 한국 공식 섭취 기준)
 │   └── disclaimer.md                # 한/영 면책 + 4종 조건부 배너
 ├── prompts/                         # 단계별 프롬프트
 │   ├── detect-intent.md             # Phase 0 인텐트 라우터 (quick_check / quick_replace / full_analysis)
 │   ├── detect-profile.md            # Phase 0 프로필 감지 (관계 키워드 → 기존 프로필 매칭)
 │   ├── parse-image.md               # Phase 2 이미지 → JSON
+│   ├── parse-kfda-response.md       # C003 응답 → 구조화 JSON (STDR_STND/RAWMTRL_NM/NTK_MTHD)
 │   ├── analyze-ingredient.md        # Phase 3 정규화·합산·RDA/UL 평가
 │   └── report-template.md           # Phase 5 JSON → 마크다운 리포트
 └── examples/                        # 테스트 케이스 (가상 브랜드)
@@ -152,7 +182,7 @@ user-data/
 | Tier | 소스 | 용도 |
 |------|------|------|
 | **Tier 1** | NIH ODS / PubMed / Cochrane | 1차 근거. RDA·UL·임상 연구 |
-| **Tier 2** | Examine.com / 식약처 건기식 원료DB / Drugs.com / NCCIH | 보조 근거. Tier 1 부족 시 |
+| **Tier 2** | Examine.com / **식약처 C003·I2710 Open API** / 식약처 건기식 원료DB / Drugs.com / NCCIH | 보조 근거 + **국내 제품 1차 식별**. KFDA API는 `KFDA_FOODSAFETY_KEY` env 설정 시 활성화 |
 | **Tier 3** | iHerb / 쿠팡 / 네이버쇼핑 | **가격 조회만**. 리뷰는 iHerb만 요약 인용 |
 
 **절대 준수**:

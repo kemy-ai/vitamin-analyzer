@@ -1,6 +1,6 @@
 ---
 name: vitamin-analyzer
-description: Help users audit their supplement stack and answer the quiet question behind every vitamin bottle — "Am I actually covering what I need? Am I doubling up? Is anything over the upper limit?" Guides the user on a journey to optimize their vitamin portfolio with evidence-based analysis. Activates when the user shares a supplement name, ingredient list, or Supplement Facts label photo, optionally with personal context (age, biological sex, symptoms, pregnancy, prescription drugs). Returns a Korean (default) or English markdown report covering RDA gaps, UL overages, duplicate ingredients, drug/supplement interactions, and 5 domestic + 3 overseas (iHerb) alternative products — every medical claim backed by Tier 1–2 citations from the U.S. National Institutes of Health Office of Dietary Supplements (NIH ODS), PubMed (National Library of Medicine), Cochrane Library systematic reviews, and Examine.com. Supports multiple user-named profiles (self, family, friends) and three intent modes (quick_check / quick_replace / full_analysis) to match answer depth to question depth. Persists product DB, stack JSON, and reports under ./user-data/. Declines analyses for under-12 and pets; never issues prescription-drug dosing advice.
+description: Help users audit their supplement stack and answer the quiet question behind every vitamin bottle — "Am I actually covering what I need? Am I doubling up? Is anything over the upper limit?" Guides the user on a journey to optimize their vitamin portfolio with evidence-based analysis. Activates when the user shares a supplement name, ingredient list, or Supplement Facts label photo, optionally with personal context (age, biological sex, symptoms, pregnancy, prescription drugs). Returns a Korean (default) or English markdown report covering RDA gaps, UL overages, duplicate ingredients, drug/supplement interactions, and 5 domestic + 3 overseas (iHerb) alternative products — every medical claim backed by Tier 1–2 citations from the U.S. National Institutes of Health Office of Dietary Supplements (NIH ODS), PubMed (National Library of Medicine), Cochrane Library systematic reviews, Examine.com, and the Korean Ministry of Food and Drug Safety (식약처) public Open API for domestic product identification when KFDA_HTFS_KEY / KFDA_FOODSAFETY_KEY env vars are set. Supports multiple user-named profiles (self, family, friends) and three intent modes (quick_check / quick_replace / full_analysis) to match answer depth to question depth. Persists product DB, stack JSON, and reports under ./user-data/. Declines analyses for under-12 and pets; never issues prescription-drug dosing advice.
 license: MIT
 version: 1.1.3
 ---
@@ -236,14 +236,18 @@ Phase 0 직후 실행. 사용자 발화의 깊이에 맞는 모드를 선택.
 3. 현재 판독된 부분만으로 분석 진행 (일부 성분 누락 가능, 권장 X)
 ```
 
-#### 4-1-3. 제품명만 입력 — 7단계 Fallback Chain 
+#### 4-1-3. 제품명만 입력 — Fallback Chain v2 (KFDA API 우선)
 
-"텍스트 기반 크롤링"보다 "라벨 사진 + 제품 DB"가 훨씬 안정적이라는 결론(L8). 순서를 전면 재배치:
+**핵심 원칙 (2026-04-17 재설계)**:
+- 한국 제품 → **식약처 C003 API가 1차 근거** (정부 공식 DB, 크롤링 차단·JS 렌더링 이슈 없음)
+- 라벨 사진 업로드 시 → OCR + API 교차검증 (**라벨 값이 ground truth**, API 차이는 "리뉴얼 가능성" 정보성 병기)
+- 해외 제품은 C003 미등록 → 기존 Perplexity/공식몰/iHerb 체인으로 폴백
+- 전체 규칙: `references/kfda-htfs-api.md`
 
 ```
-Step A: 사용자 라벨 사진 요청 (최우선)
- - 대화 초반에 "라벨 사진 있으면 크롤링보다 훨씬 정확해요. 있으시면 올려주세요."
- - 사진 제공 시 → prompts/parse-image.md로 즉시 JSON 추출 → Step X로
+Step A: 사용자 라벨 사진 요청 (항상 1순위 질문)
+ - "라벨 사진 있으면 훨씬 정확해요. 있으시면 올려주세요."
+ - 사진 제공 시 → prompts/parse-image.md로 JSON 추출 → Step B-KFDA로 교차검증 → Step X
  - 없으면 Step B로
 
 Step B: user-data/products/ DB 재사용
@@ -251,40 +255,69 @@ Step B: user-data/products/ DB 재사용
  - verified_at 365일 이내 + confidence ≥ medium이면 재사용
  - DB에 있으면 → Step X로 (네트워크 호출 0건)
 
-Step C: Perplexity MCP 조회
- - perplexity_research("{브랜드} {제품명} 전성분 함량 mg µg") 호출
- - 한국어 제품명 검색에서 WebSearch보다 정확도 우수
- - 출처 URL이 명시되지 않으면 confidence: "low"
+Step C: ★ 식약처 C003 API (한국 제품 1차 근거)
+ - 조건: env KFDA_FOODSAFETY_KEY 설정됨 + 한국 브랜드로 추정 (한글 제품명 또는 한국 제조사명)
+ - 엔드포인트:
+   GET http://openapi.foodsafetykorea.go.kr/api/{KEY}/C003/json/1/10/PRDLST_NM={제품명}
+   (필요 시 BSSH_NM={제조사}로 추가 필터)
+ - 결과 처리 (kfda-htfs-api.md §4-4 확정 규칙):
+   * 0건 → Step D로
+   * 1건 → 확정 (사용자에게 "이 제품 맞나요?" 1회 확인)
+   * 2~5건 → 리스트 제시 + 사용자 선택
+   * 6건+ → 좁히기 질문 (제조사 → 제형 → 함량 → 구매시기 순) → 5건 이하까지 반복
+ - 확정된 row → prompts/parse-kfda-response.md로 구조화 추출 → Step X
 
-Step D: 공식 브랜드몰 / 제조사 홈페이지
+Step B-KFDA: 라벨 사진 교차검증 (Step A에서 사진 받았을 때만)
+ - env KFDA_FOODSAFETY_KEY 없으면 스킵
+ - 라벨에 명시된 제품명·제조사로 C003 조회
+ - 결과 비교 규칙 (kfda-htfs-api.md §8):
+   * 함량 동일 → confidence: "high" 확정
+   * 10% 이상 차이 → 라벨 값 채택. 리포트에 "식약처 등록 스펙과 차이 — 리뉴얼 또는 다른 버전 가능성" 정보성 병기
+   * API에만 있는 성분 → 라벨 기준. "신고 누락 가능성" 병기
+   * API에 없는 성분 → 라벨 기준. "식약처 DB 미등록 제품" 병기
+
+Step D: Perplexity MCP 조회
+ - perplexity_research("{브랜드} {제품명} 전성분 함량 mg µg")
+ - Step C에서 0건인 경우의 해외 제품·미등록 국내 제품 대상
+ - 출처 URL 명시 없으면 confidence: "low"
+
+Step E: 공식 브랜드몰 / 제조사 홈페이지
  - WebSearch: "{브랜드} {제품명} 성분" site:공식도메인
  - 성공 조건: 성분명+함량+단위가 **텍스트로 노출**됨 (이미지/"상품상세 참조"는 실패 판정 — L4)
 
-Step E: 식약처 건강기능식품 원료DB
- - WebSearch: "{제품명} site:foodsafetykorea.go.kr"
- - 한국 건기식 등록 제품은 원료·함량 공개
-
 Step F: iHerb / Amazon 해외 동일 제품
  - WebSearch: "{제품명 영문} Supplement Facts"
+ - 해외 직구 제품·글로벌 브랜드 대상
 
 Step G: 사용자 재질문 (최후)
  - "공개된 성분 정보를 찾지 못했습니다."
- - 옵션: (1) 제품 사진 직접 업로드 (2) 성분 직접 텍스트 입력 (3) 해당 제품 제외
+ - 옵션: (1) 라벨 사진 직접 업로드 (2) 성분 직접 텍스트 입력 (3) 해당 제품 제외
 
 Step X (공통): 성공 시 user-data/products/{key}.json에 저장
- - source.type 기록 (label_photo / db_reuse / perplexity / official_site / kfda / iherb)
+ - source.type 기록 (label_photo / db_reuse / kfda / perplexity / official_site / iherb)
+ - PRDLST_REPORT_NO가 있으면 kfda_report_no 필드에 보존 (재조회 키)
  - verified_at = 오늘 날짜
  - 다음 조회부터 Step B에서 즉시 재사용
 ```
 
+**우선순위 요약**:
+| 입력 유형 | 1순위 | 2순위 | 교차검증 |
+|-----------|-------|-------|----------|
+| 라벨 사진 | Step A (OCR) | — | Step B-KFDA (라벨 우선, API 차이 병기) |
+| 한국 제품명 | Step C (KFDA API) | Step D (Perplexity) | — |
+| 해외 제품명 | Step D (Perplexity) | Step E/F | — |
+| 제품명+라벨 | Step A + Step C 동시 | — | Step B-KFDA |
+
 **금지 도메인 / 주의사항**:
-- ⚠️ **네이버 brand.naver.com은 차단율 사실상 100%** (L3) — Step D에서 감지 시 **1회만** 시도 후 즉시 다음 단계
+- ⚠️ **네이버 brand.naver.com은 차단율 사실상 100%** (L3) — Step E에서 감지 시 **1회만** 시도 후 즉시 다음 단계
 - 공식몰 "상품상세페이지 참조" 텍스트만 있으면 **실패 판정** (L4) — 다음 단계로
 - **추측/환각 금지**: 성분표를 못 찾으면 지어내지 말 것. `{unit}` 미상이면 `null` + confidence: "low"
+- **KFDA 키 미설정 시**: Step C 건너뛰고 Step D로. 리포트 상단에 "KFDA 미연동 — 설치 가이드 참조" 배너 1회
 
 **추가 규칙**:
-- Step A~G 각 단계 **실제 시도**했음을 내부 로그로 추적 → 사용자에게 "A 스킵, B 히트" 등 투명하게 보고
+- Step A~G 각 단계 **실제 시도**했음을 내부 로그로 추적 → 사용자에게 "Step C에서 KFDA DB 3건 중 선택하신 것" 등 투명하게 보고
 - 동일 세션 내 동일 제품 재조회 금지 (Step B DB hit로 해결)
+- KFDA 응답 원문은 로컬 캐시에만. 외부 전송 금지 (kfda-htfs-api.md §10)
 
 #### 4-1-4. 복수 제품 입력
 - 2개 이상의 이미지/텍스트 입력을 `products[]` 배열로 관리
@@ -436,7 +469,8 @@ Step X (공통): 성공 시 user-data/products/{key}.json에 저장
 | 1 | NIH ODS | RDA/UL/팩트시트 | 모든 영양소 권고 |
 | 1 | Cochrane | 체계적 고찰 | 품질 필터링 |
 | 2 | Examine.com | 근거 등급 A~D | 일반 소비자 요약 허용 |
-| 2 | 식약처 건기식 원료DB | 국내 인정 원료 | 국내 규격 |
+| 2 | 식약처 C003/I2710 Open API | **국내 제품 1차 식별 + 원료 섭취 기준** | `KFDA_FOODSAFETY_KEY` env (선택). 상세: `references/kfda-htfs-api.md` |
+| 2 | 식약처 건기식 원료DB (웹) | 국내 인정 원료 공개 페이지 | API 미연동 시 폴백 |
 | 2 | Drugs.com | 약물 상호작용 | 처방약 조회 |
 | 3 | iHerb | 해외가 + 리뷰 | 리뷰 요약만 |
 | 3 | 쿠팡 | 국내가 | **리뷰 인용 금지** |
@@ -571,6 +605,9 @@ Claude:
 | `prompts/detect-intent.md` | 3모드 인텐트 분류 | 0.5 |
 | `references/user-data-schema.md` | user-data/ JSON 스키마 5종 + 명명 규칙 | 0, 1, 6 |
 | `references/bioavailability-table.md` | 동일 성분 다른 형태 흡수율 비교 | 5 |
+| `references/kfda-htfs-api.md` | 식약처 4종 Open API 엔드포인트·필드·5건 임계·교차검증 규칙 | 1 |
+| `references/korean-intake-limits.md` | I2710 큐레이션 (28영양소 + 기능성 12종 한국 공식 섭취 기준) | 3 |
+| `prompts/parse-kfda-response.md` | C003 응답 → 구조화 JSON 추출 (STDR_STND/RAWMTRL_NM/NTK_MTHD) | 1 |
 
 ---
 

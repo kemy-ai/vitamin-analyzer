@@ -4,6 +4,8 @@
 > **기관 병기**: NIH DRI (미국 국립보건원) + 식약처 KDRI 2020 (한국).
 > **대상**: 19세 이상 성인. **영유아(<12세)·아동(12-18세)은 분석 범위 외**.
 > **단위**: `references/ingredient-aliases.md` §0 변환식 참조.
+>
+> **한국 공식 섭취 기준 교차 참조**: 식약처 I2710 "품목분류 정보" API가 건강기능식품 원료별 1일 섭취량(하한/상한)을 제공. 본 표의 KDRI 값과 다를 경우 **둘 중 낮은 값** 기준으로 UL 판정 (보수적). 큐레이션본: `references/korean-intake-limits.md`. 실시간 조회: `references/kfda-htfs-api.md` §6.
 
 ---
 
