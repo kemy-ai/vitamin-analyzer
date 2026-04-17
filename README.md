@@ -198,7 +198,7 @@ user-data/
   - 의학적 주장 변경 → Tier 1 근거 URL 필수
   - RDA·UL 수치 변경 → NIH ODS 또는 KDRI 공식 문서 링크
   - 상표권 리스크가 있는 실제 제품명 추가 **금지**
-- 참조 문서 기여: `CONTRIBUTING.md`가 아직 없음 — v1.1에서 추가 예정
+- 참조 문서 기여: `CONTRIBUTING.md`는 향후 추가 예정
 
 ---
 

@@ -1,4 +1,4 @@
-# User-Data Schema (v1.1)
+# User-Data Schema
 
 > vitamin-analyzer 스킬이 사용자 워크스페이스에 생성·읽는 JSON 파일의 스키마 정의.
 > 범용 배포 원칙: 사용자가 프로필명을 직접 결정. 특정 개인의 이름이나 식별자를 하드코딩 금지.
@@ -53,7 +53,7 @@
 ```
 
 **필드**:
-- `schema_version` (string, required): 스키마 버전. v1.1은 "1.1.0"
+- `schema_version` (string, required): 스키마 버전
 - `default_profile_id` (string, required): 사용자 발화에 특정 지시어가 없을 때 적용할 기본 프로필
 - `profiles[]` (array, required):
   - `profile_id` (string, required): 파일명 slug
@@ -116,7 +116,7 @@
 - `health_context.medications[]`: 처방약 이름 배열 — 보충제↔약물 상호작용 체크용
 - `preferences.preferred_source`: `"domestic" | "international" | "auto"` — 대체제품 제안 편향
 - `preferences.language`: `"ko" | "en"` — 리포트 출력 언어
-- `consent.disclaimer_acknowledged`: 면책 조항 동의 여부 (v1.1에서는 첫 분석 시 1회 확인)
+- `consent.disclaimer_acknowledged`: 면책 조항 동의 여부 (첫 분석 시 1회 확인)
 
 **프라이버시 원칙**:
 - 이 파일은 로컬에만 저장. 스킬이 외부 API에 **원문 전송 금지**
@@ -278,14 +278,6 @@ ln -sfn "./user-data/reports/default/2026-04-17_1733_analysis.md" \
 
 ---
 
-## 7. 마이그레이션 (v1.0.1 → v1.1)
-
-기존 `./reports/YYYY-MM-DD_HHMM_analysis.md`는 `reports/default/`로 이동.
-
-```bash
-# 자동 수행 (Phase 0 최초 진입 시 1회)
-mkdir -p ./user-data/reports/default
-mv ./reports/*.md ./user-data/reports/default/ 2>/dev/null || true
-```
+## 7. 최초 실행 시 동작
 
 프로필 파일이 없으면 `default` 프로필을 자동 생성 (빈 demographics — 분석 시 사용자에게 질문).

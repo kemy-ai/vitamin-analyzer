@@ -19,12 +19,12 @@ breastfeeding: no
 prescriptions: none
 conditions: none
 symptoms:
-  - 월경 주기 불규칙 (3-6개월 변동)
-  - 수면 저하·야간 열감
-  - 체력 저하
+ - 월경 주기 불규칙 (3-6개월 변동)
+ - 수면 저하·야간 열감
+ - 체력 저하
 goals:
-  - 갱년기 이행기 전반 건강 유지
-  - 뼈·관절 건강
+ - 갱년기 이행기 전반 건강 유지
+ - 뼈·관절 건강
 country: KR
 language: ko
 ```
@@ -119,41 +119,41 @@ language: ko
 
 ```json
 {
-  "analysis_status": "ok",
-  "profile_summary": "45세 여성 / 갱년기 이행기 / 임신·수유 없음 / 처방약 없음 / 한국",
-  "warnings_triggered": {
-    "infant_or_pet": false,
-    "pregnancy": false,
-    "breastfeeding": false,
-    "prescription_drug_present": false,
-    "ul_exceeded": []
-  },
-  "duplicates": [],
-  "interactions": [
-    {
-      "severity": "🟡",
-      "type": "food_or_timing",
-      "pair": "철 ↔ 칼슘·차·커피 동반 흡수 저하",
-      "summary": "철 14 mg + 칼슘 200 mg 동일 제품 — 흡수 간섭 가능. 제품이 분할 복용이 아닌 1일 1정이라 실질 영향은 제한적. 식이 차/커피는 제품 복용 전후 2시간 피하기 권장",
-      "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/Iron-HealthProfessional/"}]
-    }
-  ],
-  "stack_optimization": {
-    "remove": [],
-    "reduce": [
-      {"canonical": "thiamine",   "reason": "RDA 273%, UL 미설정 수용성이나 실질 이득 근거 부족", "target": "1-2 mg 수준의 저용량 종합비타민 선택지 고려"},
-      {"canonical": "riboflavin", "reason": "RDA 250%, 동일 사유",                               "target": "동일"}
-    ],
-    "add": [
-      {"canonical": "calcium",   "reason": "45세 여성 RDA 700 mg (KDRI). 본 제품 200 mg만으로는 부족. 식이 섭취 확인 후 보충제 추가 여부 판단",
-       "target": "식이 포함 합산 700 mg 목표. 부족 시 200-500 mg (Citrate) 추가, 1회 500 mg 이하 분할",
-       "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/"}]},
-      {"canonical": "magnesium", "reason": "45세 여성 KDRI 280 mg / NIH 320 mg. 본 제품 100 mg으로 부족. 수면·근육 호소 프로필에 부합",
-       "target": "200-250 mg 추가 (Glycinate/Citrate)",
-       "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/"}]}
-    ]
-  },
-  "unrecognized_ingredients": []
+ "analysis_status": "ok",
+ "profile_summary": "45세 여성 / 갱년기 이행기 / 임신·수유 없음 / 처방약 없음 / 한국",
+ "warnings_triggered": {
+ "infant_or_pet": false,
+ "pregnancy": false,
+ "breastfeeding": false,
+ "prescription_drug_present": false,
+ "ul_exceeded": []
+ },
+ "duplicates": [],
+ "interactions": [
+ {
+ "severity": "🟡",
+ "type": "food_or_timing",
+ "pair": "철 ↔ 칼슘·차·커피 동반 흡수 저하",
+ "summary": "철 14 mg + 칼슘 200 mg 동일 제품 — 흡수 간섭 가능. 제품이 분할 복용이 아닌 1일 1정이라 실질 영향은 제한적. 식이 차/커피는 제품 복용 전후 2시간 피하기 권장",
+ "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/Iron-HealthProfessional/"}]
+ }
+ ],
+ "stack_optimization": {
+ "remove": [],
+ "reduce": [
+ {"canonical": "thiamine", "reason": "RDA 273%, UL 미설정 수용성이나 실질 이득 근거 부족", "target": "1-2 mg 수준의 저용량 종합비타민 선택지 고려"},
+ {"canonical": "riboflavin", "reason": "RDA 250%, 동일 사유", "target": "동일"}
+ ],
+ "add": [
+ {"canonical": "calcium", "reason": "45세 여성 RDA 700 mg (KDRI). 본 제품 200 mg만으로는 부족. 식이 섭취 확인 후 보충제 추가 여부 판단",
+ "target": "식이 포함 합산 700 mg 목표. 부족 시 200-500 mg (Citrate) 추가, 1회 500 mg 이하 분할",
+ "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/"}]},
+ {"canonical": "magnesium", "reason": "45세 여성 KDRI 280 mg / NIH 320 mg. 본 제품 100 mg으로 부족. 수면·근육 호소 프로필에 부합",
+ "target": "200-250 mg 추가 (Glycinate/Citrate)",
+ "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/"}]}
+ ]
+ },
+ "unrecognized_ingredients": []
 }
 ```
 
@@ -216,9 +216,9 @@ language: ko
 
 ### ➕ 추가 고려
 - **칼슘** — 45세 여성 KDRI 700 mg 기준 본 제품 200 mg만으로 부족. 식이 섭취(유제품·뼈째 먹는 생선) 점검 후 부족 시 200-500 mg (Citrate) 추가, **1회 500 mg 이하 분할** 원칙.
-  - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/]
+ - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/]
 - **마그네슘** — KDRI 280 / NIH 320 mg 기준 본 제품 100 mg은 31-36% 수준. 수면 저하·야간 열감 프로필에 부합. 200-250 mg (Glycinate/Citrate) 추가 고려.
-  - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/]
+ - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/]
 
 ## 대체 제품 비교
 
@@ -299,8 +299,3 @@ language: ko
 | 같은 제품 + 임신 8주 | **🔴 최상단 임신 배너**. Vit A 800 mcg RAE는 임신 UL 3000의 27%로 안전 범위이나 retinyl palmitate 형태라 **"과량·누적 섭취 주의" 메모**. 엽산 400이 임신 RDA 600에 미달 → add에 엽산 200 mcg 권고 |
 | 같은 제품 + 와파린 복용 | **🔴 최상단 처방약 배너**. 비타민 K 80 mcg는 소량이지만 와파린 INR 변동 우려 → "섭취량 일정 유지" 경고. 제품 교체·중단 결정은 의사 상담 |
 
----
-
-## 8. 변경 이력
-
-- **v1.0 (2026-04-17)**: 세션 3 — 25성분 단일 제품 종합비타민 테스트 케이스 초안.

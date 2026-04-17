@@ -22,12 +22,12 @@ breastfeeding: no
 prescriptions: none
 conditions: none
 symptoms:
-  - 직장·육아 복합 스트레스
-  - 수면 질 저하
-  - 근육 뭉침·종아리 경련 간헐적
+ - 직장·육아 복합 스트레스
+ - 수면 질 저하
+ - 근육 뭉침·종아리 경련 간헐적
 goals:
-  - 종합 영양 + 스트레스 완화
-  - 피로·에너지 개선
+ - 종합 영양 + 스트레스 완화
+ - 피로·에너지 개선
 country: KR
 language: ko
 ```
@@ -66,18 +66,18 @@ language: ko
 
 ```json
 {
-  "vitamin_d":  {"total_amount": 150, "unit": "mcg",
-                 "sources": [{"product": "Women's Complete", "amount": 25}, {"product": "SunD3 5000", "amount": 125}]},
-  "pyridoxine": {"total_amount": 78,  "unit": "mg",
-                 "sources": [{"product": "Women's Complete", "amount": 3},  {"product": "Stress B-Complex", "amount": 75}]},
-  "magnesium":  {"total_amount": 100, "unit": "mg",
-                 "sources": [{"product": "Women's Complete", "amount": 100}]},
-  "calcium":    {"total_amount": 200, "unit": "mg",
-                 "sources": [{"product": "Women's Complete", "amount": 200}]},
-  "iron":       {"total_amount": 14,  "unit": "mg",
-                 "sources": [{"product": "Women's Complete", "amount": 14}]},
-  "folate":     {"total_amount": 400, "unit": "mcg DFE",
-                 "sources": [{"product": "Stress B-Complex", "amount": 400}]}
+ "vitamin_d": {"total_amount": 150, "unit": "mcg",
+ "sources": [{"product": "Women's Complete", "amount": 25}, {"product": "SunD3 5000", "amount": 125}]},
+ "pyridoxine": {"total_amount": 78, "unit": "mg",
+ "sources": [{"product": "Women's Complete", "amount": 3}, {"product": "Stress B-Complex", "amount": 75}]},
+ "magnesium": {"total_amount": 100, "unit": "mg",
+ "sources": [{"product": "Women's Complete", "amount": 100}]},
+ "calcium": {"total_amount": 200, "unit": "mg",
+ "sources": [{"product": "Women's Complete", "amount": 200}]},
+ "iron": {"total_amount": 14, "unit": "mg",
+ "sources": [{"product": "Women's Complete", "amount": 14}]},
+ "folate": {"total_amount": 400, "unit": "mcg DFE",
+ "sources": [{"product": "Stress B-Complex", "amount": 400}]}
 }
 ```
 
@@ -101,26 +101,26 @@ language: ko
 
 ```json
 {
-  "duplicates": [
-    {
-      "canonical": "vitamin_d",
-      "severity": "🔴",
-      "total": 150,
-      "ul": 100,
-      "ul_ratio": 1.5,
-      "products": ["Women's Complete", "SunD3 5000"],
-      "recommendation": "SunD3 5000 중단 또는 격일 복용 전환. 종합비타민의 25 mcg만 유지 시 UL 안전 범위(25% UL)"
-    },
-    {
-      "canonical": "pyridoxine",
-      "severity": "🟠",
-      "total": 78,
-      "ul": 100,
-      "ul_ratio": 0.78,
-      "products": ["Women's Complete", "Stress B-Complex"],
-      "recommendation": "Stress B-Complex의 B6를 저용량(10-25 mg, P-5-P) 제품으로 교체"
-    }
-  ]
+ "duplicates": [
+ {
+ "canonical": "vitamin_d",
+ "severity": "🔴",
+ "total": 150,
+ "ul": 100,
+ "ul_ratio": 1.5,
+ "products": ["Women's Complete", "SunD3 5000"],
+ "recommendation": "SunD3 5000 중단 또는 격일 복용 전환. 종합비타민의 25 mcg만 유지 시 UL 안전 범위(25% UL)"
+ },
+ {
+ "canonical": "pyridoxine",
+ "severity": "🟠",
+ "total": 78,
+ "ul": 100,
+ "ul_ratio": 0.78,
+ "products": ["Women's Complete", "Stress B-Complex"],
+ "recommendation": "Stress B-Complex의 B6를 저용량(10-25 mg, P-5-P) 제품으로 교체"
+ }
+ ]
 }
 ```
 
@@ -130,23 +130,23 @@ language: ko
 
 ```json
 {
-  "remove": [],
-  "reduce": [
-    {"canonical": "vitamin_d",  "reason": "UL 1.5배 초과 (150 mcg > UL 100 mcg), 2개 제품 중복",
-     "action": "SunD3 5000 중단 또는 격일 복용. 종합비타민의 25 mcg(1000 IU) 단독 유지 시 UL 25%로 안전",
-     "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/"}]},
-    {"canonical": "pyridoxine", "reason": "UL 78% — 장기 복용 시 말초신경병증 위험. 2개 제품 중복",
-     "action": "Stress B-Complex의 B6 75 mg을 10-25 mg (P-5-P 유지) 제품으로 교체",
-     "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/"}]}
-  ],
-  "add": [
-    {"canonical": "magnesium", "reason": "RDA 31-36% — 부족 가능성. 근육 뭉침·수면 저하 호소 프로필에 부합",
-     "action": "200-250 mg 추가 (Glycinate 또는 Citrate). 취침 전 복용 권장",
-     "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/"}]},
-    {"canonical": "calcium", "reason": "RDA 20-29% — 식이 미흡 시 부족 가능. 35세 여성 골량 유지 중요",
-     "action": "식이(유제품·뼈째 먹는 생선) 섭취 확인 후 부족 시 200-500 mg (Citrate) 추가. 1회 500 mg 이하 분할",
-     "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/"}]}
-  ]
+ "remove": [],
+ "reduce": [
+ {"canonical": "vitamin_d", "reason": "UL 1.5배 초과 (150 mcg > UL 100 mcg), 2개 제품 중복",
+ "action": "SunD3 5000 중단 또는 격일 복용. 종합비타민의 25 mcg(1000 IU) 단독 유지 시 UL 25%로 안전",
+ "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/"}]},
+ {"canonical": "pyridoxine", "reason": "UL 78% — 장기 복용 시 말초신경병증 위험. 2개 제품 중복",
+ "action": "Stress B-Complex의 B6 75 mg을 10-25 mg (P-5-P 유지) 제품으로 교체",
+ "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/"}]}
+ ],
+ "add": [
+ {"canonical": "magnesium", "reason": "RDA 31-36% — 부족 가능성. 근육 뭉침·수면 저하 호소 프로필에 부합",
+ "action": "200-250 mg 추가 (Glycinate 또는 Citrate). 취침 전 복용 권장",
+ "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/"}]},
+ {"canonical": "calcium", "reason": "RDA 20-29% — 식이 미흡 시 부족 가능. 35세 여성 골량 유지 중요",
+ "action": "식이(유제품·뼈째 먹는 생선) 섭취 확인 후 부족 시 200-500 mg (Citrate) 추가. 1회 500 mg 이하 분할",
+ "evidence": [{"tier": 1, "url": "https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/"}]}
+ ]
 }
 ```
 
@@ -201,25 +201,25 @@ language: ko
 ### 🔴 중복 섭취 경고
 
 - **비타민 D**: 2개 제품(Women's Complete + SunD3 5000)에 중복 함유, 합산 150 mcg (UL 100 mcg의 **1.5배 초과**)
-  - 권고: **SunD3 5000 중단 또는 격일 복용 전환**. 종합비타민 25 mcg 단독 유지 시 UL 25%
-  - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/]
+ - 권고: **SunD3 5000 중단 또는 격일 복용 전환**. 종합비타민 25 mcg 단독 유지 시 UL 25%
+ - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/]
 - **비타민 B6**: 2개 제품(Women's Complete + Stress B-Complex)에 중복 함유, 합산 78 mg (UL 100 mg의 **78%**)
-  - 권고: Stress B-Complex의 B6 75 mg을 저용량(10-25 mg, P-5-P) 제품으로 교체
-  - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/]
+ - 권고: Stress B-Complex의 B6 75 mg을 저용량(10-25 mg, P-5-P) 제품으로 교체
+ - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/]
 
 ## 스택 최적화 추천
 
 ### 📉 감량/통합 권장
 - **비타민 D** — UL 1.5배 초과. **SunD3 5000 중단 또는 격일 복용 전환**. 종합비타민의 25 mcg(1000 IU) 단독 유지 시 UL 25%로 안전 범위.
-  - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/]
+ - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/]
 - **비타민 B6** — UL 78% — 장기 복용 시 말초신경병증 위험. **Stress B-Complex의 B6 75 mg을 10-25 mg (P-5-P 형태 유지) 제품으로 교체**.
-  - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/]
+ - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/]
 
 ### ➕ 추가 고려
 - **마그네슘** — 35세 여성 KDRI 280 / NIH 320 mg 기준 현재 100 mg(31-36%)로 부족. 근육 뭉침·수면 저하 호소 프로필에 부합. **200-250 mg (Glycinate 또는 Citrate) 추가, 취침 전 복용** 권장.
-  - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/]
+ - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/]
 - **칼슘** — KDRI 700 mg 기준 200 mg(29%). 식이 섭취(유제품·뼈째 먹는 생선) 확인 후 부족 시 200-500 mg (Citrate) 추가, **1회 500 mg 이하 분할** 원칙.
-  - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/]
+ - [출처: Tier 1 / https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/]
 
 ## 대체 제품 비교
 
@@ -315,8 +315,3 @@ language: ko
 | 같은 스택 + 임신 8주 | 🔴 최상단 임신 배너. Vit D UL 초과가 임신 중 더 민감 → SunD3 즉시 중단 권고 격상. 엽산 400 DFE는 임신 RDA 600 미달 → add에 엽산 200 mcg 권고 |
 | SunD3를 2000 IU(50 mcg) 제품으로 교체 | Vit D 합산 75 mcg = UL 75% → **🟠 UL 근접**으로 강등. remove/reduce의 Vit D 추천이 "격일 복용" 수준으로 약화 |
 
----
-
-## 9. 변경 이력
-
-- **v1.0 (2026-04-17)**: 세션 3 — 3제품 스택 최적화 테스트 케이스 초안. Vit D UL 1.5배 + B6 UL 근접 + Mg 부족 혼재 시나리오.

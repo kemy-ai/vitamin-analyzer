@@ -23,15 +23,15 @@ ABSOLUTE RULES:
 7. Output JSON ONLY. The downstream `report-template.md` converts JSON to markdown.
 
 PROCESSING ORDER (deterministic):
-  Step 1:   Normalize raw names → canonical names (§2)
-  Step 2:   Standardize units (§3)
-  Step 3:   Aggregate across products (stack sum) (§4)
-  Step 4:   Compute RDA% and UL% (§5)
-  Step 4.5: Build deficiency_gap[] for nutrients below RDA (§5.5)   ← v1.0.1 신규
-  Step 5:   Flag duplicates (same canonical across products) (§6)
-  Step 6:   Match interactions (§7)
-  Step 7:   Evidence lookup (§8)
-  Step 8:   Attach health_impact_ref to UL-exceeded & deficiency entries (§8.5)   ← v1.0.1 신규
+ Step 1: Normalize raw names → canonical names (§2)
+ Step 2: Standardize units (§3)
+ Step 3: Aggregate across products (stack sum) (§4)
+ Step 4: Compute RDA% and UL% (§5)
+ Step 4.5: Build deficiency_gap[] for nutrients below RDA (§5.5)
+ Step 5: Flag duplicates (same canonical across products) (§6)
+ Step 6: Match interactions (§7)
+ Step 7: Evidence lookup (§8)
+ Step 8: Attach health_impact_ref to UL-exceeded & deficiency entries (§8.5)
 ```
 
 ---
@@ -95,25 +95,25 @@ PROCESSING ORDER (deterministic):
 입력이 `products[]` 배열이면 (즉, 2개 이상 제품):
 
 ```
-stack_matrix = {}  # { canonical_name: { total_amount, unit, sources: [{ product_index, amount, form }] } }
+stack_matrix = {} # { canonical_name: { total_amount, unit, sources: [{ product_index, amount, form }] } }
 
 FOR each product in products:
-  FOR each ingredient in product.ingredients:
-    canonical = normalize(ingredient.raw_name)         # Step 1
-    std_amount, std_unit = standardize_units(ingredient)  # Step 2
+ FOR each ingredient in product.ingredients:
+ canonical = normalize(ingredient.raw_name) # Step 1
+ std_amount, std_unit = standardize_units(ingredient) # Step 2
 
-    IF canonical NOT IN stack_matrix:
-      stack_matrix[canonical] = {
-        total_amount: std_amount,
-        unit: std_unit,
-        sources: [{ product_index, amount: std_amount, form: ingredient.raw_form }]
-      }
-    ELSE:
-      # 단위 불일치 시 표준 단위로 재변환
-      IF stack_matrix[canonical].unit != std_unit:
-        std_amount = convert(std_amount, std_unit, stack_matrix[canonical].unit)
-      stack_matrix[canonical].total_amount += std_amount
-      stack_matrix[canonical].sources.append({ product_index, amount: std_amount, form: ingredient.raw_form })
+ IF canonical NOT IN stack_matrix:
+ stack_matrix[canonical] = {
+ total_amount: std_amount,
+ unit: std_unit,
+ sources: [{ product_index, amount: std_amount, form: ingredient.raw_form }]
+ }
+ ELSE:
+ # 단위 불일치 시 표준 단위로 재변환
+ IF stack_matrix[canonical].unit != std_unit:
+ std_amount = convert(std_amount, std_unit, stack_matrix[canonical].unit)
+ stack_matrix[canonical].total_amount += std_amount
+ stack_matrix[canonical].sources.append({ product_index, amount: std_amount, form: ingredient.raw_form })
 ```
 
 ### 4-2. 출력 필드
@@ -121,15 +121,15 @@ FOR each product in products:
 각 `canonical_name`별로:
 ```json
 {
-  "canonical_name": "vitamin_d",
-  "display_name_kor": "비타민 D",
-  "total_amount": 50,
-  "unit": "mcg",
-  "sources": [
-    { "product_index": 1, "product_name": "DailyCore Women's Complete", "amount": 25, "unit": "mcg", "form": "cholecalciferol" },
-    { "product_index": 2, "product_name": "SunD3 High", "amount": 25, "unit": "mcg", "form": "cholecalciferol" }
-  ],
-  "source_count": 2
+ "canonical_name": "vitamin_d",
+ "display_name_kor": "비타민 D",
+ "total_amount": 50,
+ "unit": "mcg",
+ "sources": [
+ { "product_index": 1, "product_name": "DailyCore Women's Complete", "amount": 25, "unit": "mcg", "form": "cholecalciferol" },
+ { "product_index": 2, "product_name": "SunD3 High", "amount": 25, "unit": "mcg", "form": "cholecalciferol" }
+ ],
+ "source_count": 2
 }
 ```
 
@@ -149,7 +149,7 @@ FOR each product in products:
 ### 5-2. 계산 공식
 ```
 rda_percent = (total_amount / RDA) × 100
-ul_percent  = (total_amount / UL)  × 100   # UL이 정의된 경우만
+ul_percent = (total_amount / UL) × 100 # UL이 정의된 경우만
 ```
 
 ### 5-3. 플래그 규칙 (`references/rda-table.md` §31 기준)
@@ -168,10 +168,10 @@ ul_percent  = (total_amount / UL)  × 100   # UL이 정의된 경우만
 
 ---
 
-## 5-A. Step 4.5 — RDA 미달 분석 (`deficiency_gap[]`, v1.0.1 신규)
+## 5-A. Step 4.5 — RDA 미달 분석 (`deficiency_gap[]`)
 
 ### 5A-1. 목적
-초판(v1.0.0) 실사용 테스트에서 "UL 초과는 잘 잡지만 **RDA 미달(부족)** 분석이 누락된다"는 피드백을 반영.
+초판 실사용 테스트에서 "UL 초과는 잘 잡지만 **RDA 미달(부족)** 분석이 누락된다"는 피드백을 반영.
 입력된 스택 전체에서 **RDA 대비 부족한 영양소를 명시적으로 나열**하고, 각 항목에 **부족 시 건강 영향 참조**를 붙임.
 
 ### 5A-2. 후보군 선정 (검토 대상)
@@ -236,13 +236,13 @@ ul_percent  = (total_amount / UL)  × 100   # UL이 정의된 경우만
 ### 6-3. 출력 필드 추가
 ```json
 {
-  "canonical_name": "vitamin_d",
-  "duplicate": {
-    "is_duplicate": true,
-    "severity": "🔴",
-    "message": "2개 제품(DailyCore, SunD3)에 중복 함유, 합산 50mcg = UL의 50%... UL 초과 X, 적정",
-    "recommendation": "중복 제거 또는 한쪽 감량 검토"
-  }
+ "canonical_name": "vitamin_d",
+ "duplicate": {
+ "is_duplicate": true,
+ "severity": "🔴",
+ "message": "2개 제품(DailyCore, SunD3)에 중복 함유, 합산 50mcg = UL의 50%... UL 초과 X, 적정",
+ "recommendation": "중복 제거 또는 한쪽 감량 검토"
+ }
 }
 ```
 
@@ -285,12 +285,12 @@ ul_percent  = (total_amount / UL)  × 100   # UL이 정의된 경우만
 searched_canonical = set()
 
 FOR each canonical in stack_matrix:
-  IF canonical IN searched_canonical:
-    SKIP (reuse previous result)
-  ELSE:
-    results = web_search(canonical)
-    cache[canonical] = results
-    searched_canonical.add(canonical)
+ IF canonical IN searched_canonical:
+ SKIP (reuse previous result)
+ ELSE:
+ results = web_search(canonical)
+ cache[canonical] = results
+ searched_canonical.add(canonical)
 ```
 
 ### 8-4. URL 검증
@@ -300,7 +300,7 @@ FOR each canonical in stack_matrix:
 
 ---
 
-## 8-A. Step 8 — 부족·초과 건강 영향 매핑 (`health_impact_ref`, v1.0.1 신규)
+## 8-A. Step 8 — 부족·초과 건강 영향 매핑 (`health_impact_ref`)
 
 ### 8A-1. 참조 카탈로그
 `references/deficiency-excess-effects.md` — 28영양소 각각에 대한 **부족 시**/**초과 시** 증상·위험·임계값·출처 URL 수록.
@@ -316,13 +316,13 @@ FOR each canonical in stack_matrix:
 
 ```json
 {
-  "catalog_section": "references/deficiency-excess-effects.md §2.2",
-  "canonical_name": "vitamin_d",
-  "direction": "excess | deficiency",
-  "summary_short": "고칼슘혈증, 신결석, 혈관 석회화 (장기 UL 초과 시)",
-  "severity_tier": "severe | moderate | mild",
-  "threshold_note": "혈중 25(OH)D > 100 ng/mL에서 독성",
-  "citation_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/"
+ "catalog_section": "references/deficiency-excess-effects.md §2.2",
+ "canonical_name": "vitamin_d",
+ "direction": "excess | deficiency",
+ "summary_short": "고칼슘혈증, 신결석, 혈관 석회화 (장기 UL 초과 시)",
+ "severity_tier": "severe | moderate | mild",
+ "threshold_note": "혈중 25(OH)D > 100 ng/mL에서 독성",
+ "citation_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/"
 }
 ```
 
@@ -347,115 +347,115 @@ FOR each canonical in stack_matrix:
 
 ```json
 {
-  "analysis_status": "ok | rejected | partial",
-  "reject_reason": "string | null",
-  "profile_used": {
-    "gender": "female | male | unspecified",
-    "age": "number | null",
-    "pregnancy": "boolean",
-    "breastfeeding": "boolean",
-    "prescription_drugs": ["string"],
-    "profile_assumption": "string | null"
-  },
-  "products_summary": [
-    { "product_index": 1, "brand": "string", "product_name": "string", "ingredient_count": "number" }
-  ],
-  "stack_analysis": [
-    {
-      "canonical_name": "vitamin_d",
-      "display_name_kor": "비타민 D",
-      "total_amount": 50,
-      "unit": "mcg",
-      "sources": [
-        { "product_index": 1, "product_name": "string", "amount": 25, "unit": "mcg", "form": "cholecalciferol" }
-      ],
-      "source_count": 2,
-      "rda": { "value": 15, "unit": "mcg", "basis": "NIH 19-70세 여성", "source_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/" },
-      "ul":  { "value": 100, "unit": "mcg", "basis": "NIH UL", "source_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/" },
-      "rda_percent": 333,
-      "ul_percent": 50,
-      "flag": "🟡",
-      "flag_reason": "RDA 3배 초과이나 UL 이하로 안전 범위",
-      "duplicate": {
-        "is_duplicate": true,
-        "severity": "ℹ️",
-        "message": "2개 제품에 공통 함유, 합산 50mcg (UL의 50%, 안전 범위)",
-        "recommendation": "합산 용량 적정, 현재 수준 유지 가능"
-      },
-      "evidence_summary": "비타민 D는 뼈 건강·면역 조절에 기여 [출처: Tier 1 / https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/]",
-      "symptom_relevance": null,
-      "reference_dose_range": null,
-      "health_impact_ref": {
-        "catalog_section": "references/deficiency-excess-effects.md §2.2",
-        "direction": "excess",
-        "summary_short": "단기 고용량 시 오심·식욕부진, 장기 UL 초과 시 고칼슘혈증·신결석·혈관 석회화",
-        "severity_tier": "moderate",
-        "threshold_note": "혈중 25(OH)D > 100 ng/mL에서 독성",
-        "citation_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/"
-      }
-    }
-  ],
-  "deficiency_gap": [
-    {
-      "canonical_name": "magnesium",
-      "display_name_kor": "마그네슘",
-      "total_intake": 0,
-      "unit": "mg",
-      "rda": { "value": 320, "unit": "mg", "basis": "NIH 19-30세 여성", "source_url": "https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/" },
-      "rda_percent": 0,
-      "severity": "🟠",
-      "severity_label": "현저 부족",
-      "triggered_by_symptom": "수면 저하·스트레스",
-      "basis": "RDA",
-      "analysis_notes": "보충제 스택 기준 0mg. 식단 포함 시 달라질 수 있음",
-      "health_impact_ref": {
-        "catalog_section": "references/deficiency-excess-effects.md §17.1",
-        "direction": "deficiency",
-        "summary_short": "근경련·수면 저하·피로, 장기 부족 시 부정맥·골다공증 위험",
-        "severity_tier": "moderate",
-        "threshold_note": "혈중 Mg < 1.8 mg/dL에서 증상 발현",
-        "citation_url": "https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/"
-      }
-    }
-  ],
-  "interactions": [
-    {
-      "type": "supplement_drug | supplement_supplement | supplement_food",
-      "severity": "🔴 | 🟠 | 🟡",
-      "pair": ["calcium", "levothyroxine"],
-      "description": "칼슘은 레보티록신 흡수를 감소시킴 (동시 복용 시 4시간 이상 간격)",
-      "recommendation": "레보티록신과 4시간 이상 간격 두고 복용. 의사·약사 상담 권고.",
-      "source_url": "https://www.drugs.com/drug-interactions/calcium-carbonate-with-levothyroxine-472-0-1463-0.html"
-    }
-  ],
-  "warnings_triggered": {
-    "pregnancy": false,
-    "breastfeeding": false,
-    "infant_or_pet": false,
-    "prescription_drug_present": false,
-    "ul_exceeded": ["canonical_name"]
-  },
-  "unrecognized_ingredients": [
-    { "raw_name": "Unknown Herb X", "reason": "aliases 테이블 미등재, Claude 추론도 실패" }
-  ],
-  "stack_optimization": {
-    "remove": [
-      { "canonical": "vitamin_b1", "reason": "RDA의 1250% 초과, 수용성이지만 불필요", "affected_products": [1] }
-    ],
-    "reduce": [
-      { "canonical": "vitamin_d", "reason": "2개 제품 중복, 1개로 통합 권장", "affected_products": [1, 2] }
-    ],
-    "add": [
-      { "canonical": "magnesium", "reason": "프로필상 부족 가능성, 입력 스택에 없음", "suggested_dose_range": "200-400 mg elemental" }
-    ]
-  }
+ "analysis_status": "ok | rejected | partial",
+ "reject_reason": "string | null",
+ "profile_used": {
+ "gender": "female | male | unspecified",
+ "age": "number | null",
+ "pregnancy": "boolean",
+ "breastfeeding": "boolean",
+ "prescription_drugs": ["string"],
+ "profile_assumption": "string | null"
+ },
+ "products_summary": [
+ { "product_index": 1, "brand": "string", "product_name": "string", "ingredient_count": "number" }
+ ],
+ "stack_analysis": [
+ {
+ "canonical_name": "vitamin_d",
+ "display_name_kor": "비타민 D",
+ "total_amount": 50,
+ "unit": "mcg",
+ "sources": [
+ { "product_index": 1, "product_name": "string", "amount": 25, "unit": "mcg", "form": "cholecalciferol" }
+ ],
+ "source_count": 2,
+ "rda": { "value": 15, "unit": "mcg", "basis": "NIH 19-70세 여성", "source_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/" },
+ "ul": { "value": 100, "unit": "mcg", "basis": "NIH UL", "source_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/" },
+ "rda_percent": 333,
+ "ul_percent": 50,
+ "flag": "🟡",
+ "flag_reason": "RDA 3배 초과이나 UL 이하로 안전 범위",
+ "duplicate": {
+ "is_duplicate": true,
+ "severity": "ℹ️",
+ "message": "2개 제품에 공통 함유, 합산 50mcg (UL의 50%, 안전 범위)",
+ "recommendation": "합산 용량 적정, 현재 수준 유지 가능"
+ },
+ "evidence_summary": "비타민 D는 뼈 건강·면역 조절에 기여 [출처: Tier 1 / https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/]",
+ "symptom_relevance": null,
+ "reference_dose_range": null,
+ "health_impact_ref": {
+ "catalog_section": "references/deficiency-excess-effects.md §2.2",
+ "direction": "excess",
+ "summary_short": "단기 고용량 시 오심·식욕부진, 장기 UL 초과 시 고칼슘혈증·신결석·혈관 석회화",
+ "severity_tier": "moderate",
+ "threshold_note": "혈중 25(OH)D > 100 ng/mL에서 독성",
+ "citation_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/"
+ }
+ }
+ ],
+ "deficiency_gap": [
+ {
+ "canonical_name": "magnesium",
+ "display_name_kor": "마그네슘",
+ "total_intake": 0,
+ "unit": "mg",
+ "rda": { "value": 320, "unit": "mg", "basis": "NIH 19-30세 여성", "source_url": "https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/" },
+ "rda_percent": 0,
+ "severity": "🟠",
+ "severity_label": "현저 부족",
+ "triggered_by_symptom": "수면 저하·스트레스",
+ "basis": "RDA",
+ "analysis_notes": "보충제 스택 기준 0mg. 식단 포함 시 달라질 수 있음",
+ "health_impact_ref": {
+ "catalog_section": "references/deficiency-excess-effects.md §17.1",
+ "direction": "deficiency",
+ "summary_short": "근경련·수면 저하·피로, 장기 부족 시 부정맥·골다공증 위험",
+ "severity_tier": "moderate",
+ "threshold_note": "혈중 Mg < 1.8 mg/dL에서 증상 발현",
+ "citation_url": "https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/"
+ }
+ }
+ ],
+ "interactions": [
+ {
+ "type": "supplement_drug | supplement_supplement | supplement_food",
+ "severity": "🔴 | 🟠 | 🟡",
+ "pair": ["calcium", "levothyroxine"],
+ "description": "칼슘은 레보티록신 흡수를 감소시킴 (동시 복용 시 4시간 이상 간격)",
+ "recommendation": "레보티록신과 4시간 이상 간격 두고 복용. 의사·약사 상담 권고.",
+ "source_url": "https://www.drugs.com/drug-interactions/calcium-carbonate-with-levothyroxine-472-0-1463-0.html"
+ }
+ ],
+ "warnings_triggered": {
+ "pregnancy": false,
+ "breastfeeding": false,
+ "infant_or_pet": false,
+ "prescription_drug_present": false,
+ "ul_exceeded": ["canonical_name"]
+ },
+ "unrecognized_ingredients": [
+ { "raw_name": "Unknown Herb X", "reason": "aliases 테이블 미등재, Claude 추론도 실패" }
+ ],
+ "stack_optimization": {
+ "remove": [
+ { "canonical": "vitamin_b1", "reason": "RDA의 1250% 초과, 수용성이지만 불필요", "affected_products": [1] }
+ ],
+ "reduce": [
+ { "canonical": "vitamin_d", "reason": "2개 제품 중복, 1개로 통합 권장", "affected_products": [1, 2] }
+ ],
+ "add": [
+ { "canonical": "magnesium", "reason": "프로필상 부족 가능성, 입력 스택에 없음", "suggested_dose_range": "200-400 mg elemental" }
+ ]
+ }
 }
 ```
 
 ### 9-1. 필드 의미 요약
 
 - `stack_analysis[]`: canonical 성분별 합산 + RDA/UL + 플래그 + 중복 + 근거 + **health_impact_ref** (UL 근접/초과 시)
-- `deficiency_gap[]` (v1.0.1 신규): RDA 미달 영양소 목록. 28영양소 전수 검토 후 조건 해당분만 포함. **health_impact_ref** 필수
+- `deficiency_gap[]`: RDA 미달 영양소 목록. 28영양소 전수 검토 후 조건 해당분만 포함. **health_impact_ref** 필수
 - `interactions[]`: 20패턴 기반 매칭 결과
 - `warnings_triggered`: `report-template.md`에서 상단 배너 삽입 여부 결정
 - `unrecognized_ingredients`: aliases/Claude 추론 모두 실패한 성분 (리포트에 명시)
@@ -470,81 +470,81 @@ FOR each canonical in stack_matrix:
 **입력** (`parse-image.md` 출력 축약):
 ```json
 {
-  "products": [
-    {
-      "product_index": 1,
-      "brand_raw": "DailyCore Nutrition",
-      "product_name_raw": "Women's Complete",
-      "ingredients": [
-        { "raw_name": "Vitamin D", "amount": 25, "unit": "mcg", "raw_form": "cholecalciferol" },
-        { "raw_name": "Vitamin B6", "amount": 50, "unit": "mg", "raw_form": "pyridoxine HCl" },
-        { "raw_name": "Calcium", "amount": 200, "unit": "mg", "raw_form": "carbonate" }
-      ]
-    },
-    {
-      "product_index": 2,
-      "brand_raw": "PureSea",
-      "product_name_raw": "Omega Triple",
-      "ingredients": [
-        { "raw_name": "EPA", "amount": 400, "unit": "mg", "raw_form": null },
-        { "raw_name": "DHA", "amount": 300, "unit": "mg", "raw_form": null }
-      ]
-    },
-    {
-      "product_index": 3,
-      "brand_raw": "SunD3",
-      "product_name_raw": "High Potency D3",
-      "ingredients": [
-        { "raw_name": "Vitamin D3", "amount": 125, "unit": "mcg", "raw_form": "cholecalciferol" }
-      ]
-    }
-  ],
-  "overall_confidence": "high"
+ "products": [
+ {
+ "product_index": 1,
+ "brand_raw": "DailyCore Nutrition",
+ "product_name_raw": "Women's Complete",
+ "ingredients": [
+ { "raw_name": "Vitamin D", "amount": 25, "unit": "mcg", "raw_form": "cholecalciferol" },
+ { "raw_name": "Vitamin B6", "amount": 50, "unit": "mg", "raw_form": "pyridoxine HCl" },
+ { "raw_name": "Calcium", "amount": 200, "unit": "mg", "raw_form": "carbonate" }
+ ]
+ },
+ {
+ "product_index": 2,
+ "brand_raw": "PureSea",
+ "product_name_raw": "Omega Triple",
+ "ingredients": [
+ { "raw_name": "EPA", "amount": 400, "unit": "mg", "raw_form": null },
+ { "raw_name": "DHA", "amount": 300, "unit": "mg", "raw_form": null }
+ ]
+ },
+ {
+ "product_index": 3,
+ "brand_raw": "SunD3",
+ "product_name_raw": "High Potency D3",
+ "ingredients": [
+ { "raw_name": "Vitamin D3", "amount": 125, "unit": "mcg", "raw_form": "cholecalciferol" }
+ ]
+ }
+ ],
+ "overall_confidence": "high"
 }
 ```
 
 **출력 (축약)**:
 ```json
 {
-  "analysis_status": "ok",
-  "profile_used": { "gender": "female", "age": 35, "pregnancy": false, "breastfeeding": false, "prescription_drugs": [], "profile_assumption": null },
-  "stack_analysis": [
-    {
-      "canonical_name": "vitamin_d",
-      "total_amount": 150,
-      "unit": "mcg",
-      "source_count": 2,
-      "rda": { "value": 15, "unit": "mcg", "source_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/" },
-      "ul":  { "value": 100, "unit": "mcg", "source_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/" },
-      "rda_percent": 1000,
-      "ul_percent": 150,
-      "flag": "🔴",
-      "flag_reason": "2개 제품 중복 + UL(100mcg) 1.5배 초과",
-      "duplicate": { "is_duplicate": true, "severity": "🔴", "message": "DailyCore + SunD3 합산 150mcg", "recommendation": "SunD3 중단 또는 격일 복용 검토" }
-    },
-    {
-      "canonical_name": "vitamin_b6",
-      "total_amount": 50,
-      "unit": "mg",
-      "source_count": 1,
-      "rda": { "value": 1.3, "unit": "mg" },
-      "ul":  { "value": 100, "unit": "mg" },
-      "rda_percent": 3846,
-      "ul_percent": 50,
-      "flag": "🟠",
-      "flag_reason": "UL의 50%, 장기 고용량 복용 시 신경병증 위험"
-    }
-  ],
-  "stack_optimization": {
-    "remove": [],
-    "reduce": [
-      { "canonical": "vitamin_d", "reason": "UL 초과 (150mcg > 100mcg UL)", "affected_products": [1, 3] },
-      { "canonical": "vitamin_b6", "reason": "UL의 50%, 고용량 장기 복용 우려", "affected_products": [1] }
-    ],
-    "add": [
-      { "canonical": "magnesium", "reason": "35세 여성 기준 부족 가능성, 현재 스택에 없음", "suggested_dose_range": "200-320 mg elemental" }
-    ]
-  }
+ "analysis_status": "ok",
+ "profile_used": { "gender": "female", "age": 35, "pregnancy": false, "breastfeeding": false, "prescription_drugs": [], "profile_assumption": null },
+ "stack_analysis": [
+ {
+ "canonical_name": "vitamin_d",
+ "total_amount": 150,
+ "unit": "mcg",
+ "source_count": 2,
+ "rda": { "value": 15, "unit": "mcg", "source_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/" },
+ "ul": { "value": 100, "unit": "mcg", "source_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/" },
+ "rda_percent": 1000,
+ "ul_percent": 150,
+ "flag": "🔴",
+ "flag_reason": "2개 제품 중복 + UL(100mcg) 1.5배 초과",
+ "duplicate": { "is_duplicate": true, "severity": "🔴", "message": "DailyCore + SunD3 합산 150mcg", "recommendation": "SunD3 중단 또는 격일 복용 검토" }
+ },
+ {
+ "canonical_name": "vitamin_b6",
+ "total_amount": 50,
+ "unit": "mg",
+ "source_count": 1,
+ "rda": { "value": 1.3, "unit": "mg" },
+ "ul": { "value": 100, "unit": "mg" },
+ "rda_percent": 3846,
+ "ul_percent": 50,
+ "flag": "🟠",
+ "flag_reason": "UL의 50%, 장기 고용량 복용 시 신경병증 위험"
+ }
+ ],
+ "stack_optimization": {
+ "remove": [],
+ "reduce": [
+ { "canonical": "vitamin_d", "reason": "UL 초과 (150mcg > 100mcg UL)", "affected_products": [1, 3] },
+ { "canonical": "vitamin_b6", "reason": "UL의 50%, 고용량 장기 복용 우려", "affected_products": [1] }
+ ],
+ "add": [
+ { "canonical": "magnesium", "reason": "35세 여성 기준 부족 가능성, 현재 스택에 없음", "suggested_dose_range": "200-320 mg elemental" }
+ ]
+ }
 }
 ```
 
@@ -563,13 +563,3 @@ FOR each canonical in stack_matrix:
 9. **중복 검출 스킵 금지** — `source_count >= 2`면 반드시 `duplicate` 필드 채움
 10. **쿠팡/네이버 리뷰 인용 금지** — 이 단계에서는 가격 조회도 하지 않음 (`report-template.md`에서 별도 처리)
 
----
-
-## 12. 변경 이력
-
-- **v1.0 (초안)**: 7단계 프로세스 (정규화 → 단위 → 스택 합산 → RDA/UL → 중복 → 상호작용 → 근거), 스택 최적화 recommend 3종 (remove/reduce/add) 포함.
-- **v1.0.1 (2026-04-17)**: 실사용 테스트(5제품 스택) 피드백 반영.
-  - Step 4.5 **RDA 미달 분석** (`deficiency_gap[]`) 신설 — 28영양소 전수 검토, 부족 gap 명시화
-  - Step 8 **건강 영향 매핑** (`health_impact_ref`) 신설 — `references/deficiency-excess-effects.md` 카탈로그 연결
-  - 증상 기반 경계선(70-90%) 포함 규칙 추가
-  - "식단 포함 시 달라질 수 있음" 주의 문구 자동 삽입 지시

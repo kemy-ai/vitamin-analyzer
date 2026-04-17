@@ -113,45 +113,45 @@ Then, provide the supplement(s) to analyze:
 
 ---
 
-## 3. 파이프라인 (Phase 0 ~ 6, v1.1 개편)
+## 3. 파이프라인 (Phase 0 ~ 6)
 
 ```
-Phase 0: 프로필 결정 (v1.1 신규)
-  └─ prompts/detect-profile.md → profile_id 확정
-  └─ user-data/profiles/{id}.json 로드 or 신규 생성
+Phase 0: 프로필 결정 
+ └─ prompts/detect-profile.md → profile_id 확정
+ └─ user-data/profiles/{id}.json 로드 or 신규 생성
 
-Phase 0.5: 인텐트 라우팅 (v1.1 신규)
-  └─ prompts/detect-intent.md → mode 분류
-  ├─ quick_check    → Phase 1·3만 축약 실행 → 1~2 문단 답변
-  ├─ quick_replace  → Phase 1·5만 축약 실행 → 대체후보 표
-  └─ full_analysis  → Phase 1~6 전체 실행 (아래)
-        ↓
+Phase 0.5: 인텐트 라우팅 
+ └─ prompts/detect-intent.md → mode 분류
+ ├─ quick_check → Phase 1·3만 축약 실행 → 1~2 문단 답변
+ ├─ quick_replace → Phase 1·5만 축약 실행 → 대체후보 표
+ └─ full_analysis → Phase 1~6 전체 실행 (아래)
+ ↓
 Phase 1: 입력 수신 + 이미지 판독 + 제품 DB 조회
-  ├─ 라벨 사진 (최우선, v1.1)
-  ├─ user-data/products/ DB 재사용 (365일 이내, v1.1)
-  ├─ 텍스트 입력 → 직접 파싱
-  ├─ 이미지 → prompts/parse-image.md → JSON
-  └─ 제품명만 → Fallback Chain (§4-1-3, v1.1 재배치)
-        ↓
+ ├─ 라벨 사진 (최우선)
+ ├─ user-data/products/ DB 재사용 (365일 이내)
+ ├─ 텍스트 입력 → 직접 파싱
+ ├─ 이미지 → prompts/parse-image.md → JSON
+ └─ 제품명만 → Fallback Chain (§4-1-3)
+ ↓
 Phase 2: 정규화
-  └─ prompts/analyze-ingredient.md §2 → canonical_name 매핑
-  └─ prompts/analyze-ingredient.md §3 → 단위 표준화 (IU→mcg 등)
-        ↓
+ └─ prompts/analyze-ingredient.md §2 → canonical_name 매핑
+ └─ prompts/analyze-ingredient.md §3 → 단위 표준화 (IU→mcg 등)
+ ↓
 Phase 3: 스택 합산 + RDA/UL + 중복 + deficiency_gap[]
-  └─ prompts/analyze-ingredient.md §4 / §5 / §6 / §4.5 (부족, v1.0.1)
-        ↓
+ └─ prompts/analyze-ingredient.md §4 / §5 / §6 / §4.5 (부족)
+ ↓
 Phase 4: 상호작용 + 근거 URL 조회
-  └─ prompts/analyze-ingredient.md §7 / §8
-        ↓
-Phase 5: 대체제품 조회 (국내 5 + 해외 3, 흡수율 반영 v1.1)
-  └─ references/search-templates.md §10-2 + bioavailability-table.md
-  └─ 쿠팡/네이버 = 가격만 / iHerb = 가격+리뷰
-        ↓
-Phase 6: 리포트 생성 + 자동 저장 (v1.1: 프로필별 디렉토리)
-  └─ prompts/report-template.md + references/disclaimer.md §1/§2
-  └─ user-data/stacks/{profile_id}_latest.json (원본 백업)
-  └─ user-data/reports/{profile_id}/YYYY-MM-DD_HHMM_analysis.md
-  └─ user-data/reports/{profile_id}/latest.md (symlink)
+ └─ prompts/analyze-ingredient.md §7 / §8
+ ↓
+Phase 5: 대체제품 조회 (국내 5 + 해외 3, 흡수율 반영)
+ └─ references/search-templates.md §10-2 + bioavailability-table.md
+ └─ 쿠팡/네이버 = 가격만 / iHerb = 가격+리뷰
+ ↓
+Phase 6: 리포트 생성 + 자동 저장 (프로필별 디렉토리)
+ └─ prompts/report-template.md + references/disclaimer.md §1/§2
+ └─ user-data/stacks/{profile_id}_latest.json (원본 백업)
+ └─ user-data/reports/{profile_id}/YYYY-MM-DD_HHMM_analysis.md
+ └─ user-data/reports/{profile_id}/latest.md (symlink)
 ```
 
 **모드별 실행 범위**:
@@ -166,7 +166,7 @@ Phase 6: 리포트 생성 + 자동 저장 (v1.1: 프로필별 디렉토리)
 
 ## 4. Phase별 상세
 
-### Phase 0 — 프로필 결정 (v1.1 신규)
+### Phase 0 — 프로필 결정 
 
 모든 사용자 발화에 대해 **가장 먼저** 실행. 분석 대상 프로필을 확정.
 
@@ -188,7 +188,7 @@ Phase 6: 리포트 생성 + 자동 저장 (v1.1: 프로필별 디렉토리)
 
 ---
 
-### Phase 0.5 — 인텐트 라우팅 (v1.1 신규)
+### Phase 0.5 — 인텐트 라우팅 
 
 Phase 0 직후 실행. 사용자 발화의 깊이에 맞는 모드를 선택.
 
@@ -236,45 +236,45 @@ Phase 0 직후 실행. 사용자 발화의 깊이에 맞는 모드를 선택.
 3. 현재 판독된 부분만으로 분석 진행 (일부 성분 누락 가능, 권장 X)
 ```
 
-#### 4-1-3. 제품명만 입력 — 7단계 Fallback Chain (v1.1 전면 재배치)
+#### 4-1-3. 제품명만 입력 — 7단계 Fallback Chain 
 
-v1.0.1 재테스트(6제품 스택)에서 4/6 크롤링 실패 → "텍스트 기반 크롤링"보다 "라벨 사진 + 제품 DB"가 훨씬 안정적이라는 결론(L8). 순서를 전면 재배치:
+"텍스트 기반 크롤링"보다 "라벨 사진 + 제품 DB"가 훨씬 안정적이라는 결론(L8). 순서를 전면 재배치:
 
 ```
-Step A: 사용자 라벨 사진 요청 (최우선, v1.1)
-  - 대화 초반에 "라벨 사진 있으면 크롤링보다 훨씬 정확해요. 있으시면 올려주세요."
-  - 사진 제공 시 → prompts/parse-image.md로 즉시 JSON 추출 → Step X로
-  - 없으면 Step B로
+Step A: 사용자 라벨 사진 요청 (최우선)
+ - 대화 초반에 "라벨 사진 있으면 크롤링보다 훨씬 정확해요. 있으시면 올려주세요."
+ - 사진 제공 시 → prompts/parse-image.md로 즉시 JSON 추출 → Step X로
+ - 없으면 Step B로
 
 Step B: user-data/products/ DB 재사용
-  - product_key 매칭 (brand_slug + product_slug)
-  - verified_at 365일 이내 + confidence ≥ medium이면 재사용
-  - DB에 있으면 → Step X로 (네트워크 호출 0건)
+ - product_key 매칭 (brand_slug + product_slug)
+ - verified_at 365일 이내 + confidence ≥ medium이면 재사용
+ - DB에 있으면 → Step X로 (네트워크 호출 0건)
 
 Step C: Perplexity MCP 조회
-  - perplexity_research("{브랜드} {제품명} 전성분 함량 mg µg") 호출
-  - 한국어 제품명 검색에서 WebSearch보다 정확도 우수
-  - 출처 URL이 명시되지 않으면 confidence: "low"
+ - perplexity_research("{브랜드} {제품명} 전성분 함량 mg µg") 호출
+ - 한국어 제품명 검색에서 WebSearch보다 정확도 우수
+ - 출처 URL이 명시되지 않으면 confidence: "low"
 
 Step D: 공식 브랜드몰 / 제조사 홈페이지
-  - WebSearch: "{브랜드} {제품명} 성분" site:공식도메인
-  - 성공 조건: 성분명+함량+단위가 **텍스트로 노출**됨 (이미지/"상품상세 참조"는 실패 판정 — L4)
+ - WebSearch: "{브랜드} {제품명} 성분" site:공식도메인
+ - 성공 조건: 성분명+함량+단위가 **텍스트로 노출**됨 (이미지/"상품상세 참조"는 실패 판정 — L4)
 
 Step E: 식약처 건강기능식품 원료DB
-  - WebSearch: "{제품명} site:foodsafetykorea.go.kr"
-  - 한국 건기식 등록 제품은 원료·함량 공개
+ - WebSearch: "{제품명} site:foodsafetykorea.go.kr"
+ - 한국 건기식 등록 제품은 원료·함량 공개
 
 Step F: iHerb / Amazon 해외 동일 제품
-  - WebSearch: "{제품명 영문} Supplement Facts"
+ - WebSearch: "{제품명 영문} Supplement Facts"
 
 Step G: 사용자 재질문 (최후)
-  - "공개된 성분 정보를 찾지 못했습니다."
-  - 옵션: (1) 제품 사진 직접 업로드 (2) 성분 직접 텍스트 입력 (3) 해당 제품 제외
+ - "공개된 성분 정보를 찾지 못했습니다."
+ - 옵션: (1) 제품 사진 직접 업로드 (2) 성분 직접 텍스트 입력 (3) 해당 제품 제외
 
-Step X (공통, v1.1): 성공 시 user-data/products/{key}.json에 저장
-  - source.type 기록 (label_photo / db_reuse / perplexity / official_site / kfda / iherb)
-  - verified_at = 오늘 날짜
-  - 다음 조회부터 Step B에서 즉시 재사용
+Step X (공통): 성공 시 user-data/products/{key}.json에 저장
+ - source.type 기록 (label_photo / db_reuse / perplexity / official_site / kfda / iherb)
+ - verified_at = 오늘 날짜
+ - 다음 조회부터 Step B에서 즉시 재사용
 ```
 
 **금지 도메인 / 주의사항**:
@@ -356,31 +356,31 @@ Step X (공통, v1.1): 성공 시 user-data/products/{key}.json에 저장
 
 ---
 
-### Phase 6 — 리포트 생성 + 자동 저장 (v1.1: 프로필별 디렉토리 + 원본 백업)
+### Phase 6 — 리포트 생성 + 자동 저장 (프로필별 디렉토리 + 원본 백업)
 
 `prompts/report-template.md` 호출.
 
 1. `analyze-ingredient.md`의 출력 JSON을 템플릿에 적용
 2. 조건부 배너 삽입 (`warnings_triggered` 평가):
-   - `infant_or_pet: true` → §5 거부 리포트만 출력, 이후 섹션 스킵
-   - `pregnancy: true` → §3-1 배너
-   - `prescription_drug_present: true` → §3-3 배너
-   - `ul_exceeded.length > 0` → §3-4 배너
+ - `infant_or_pet: true` → §5 거부 리포트만 출력, 이후 섹션 스킵
+ - `pregnancy: true` → §3-1 배너
+ - `prescription_drug_present: true` → §3-3 배너
+ - `ul_exceeded.length > 0` → §3-4 배너
 3. `{{DISCLAIMER}}`는 `references/disclaimer.md` §1(한) / §2(영) 자동 삽입 — 수정·축약 금지
 4. `{{PROFILE_NAME}}` 마커 치환 — "{display_name}" 형식
 5. `{{UL_EXCEEDED_SECTION}}` — UL 초과/근접 상세 (`ref/deficiency-excess-effects.md` 카탈로그 연결)
 6. `{{DEFICIENCY_SECTION}}` — RDA 미달 상세 (부족 건강 영향 + 식단 보완)
-7. **원본 성분 JSON 백업** (v1.1 신규, L9 교훈):
-   - 파싱된 모든 영양소 mg/µg 수치를 `user-data/stacks/{profile_id}_latest.json`에 저장
-   - `/compact` 후 재분석 시 추정치로 대체되지 않도록 보호
-   - 실패 시 리포트 최상단에 `{{SAVE_FAILURE_BANNER}}` 치환 (리포트 본문은 정상 노출)
-8. **자동 .md 파일 저장** (v1.1: 프로필별 경로):
-   - 저장 경로: `./user-data/reports/{profile_id}/YYYY-MM-DD_HHMM_analysis.md`
-   - 파일명 중복 시 `_2`, `_3` 서픽스
-   - Write 도구로 저장 → `{{FILE_SAVED_PATH}}` 마커에 경로 치환
-9. **`latest.md` 심볼릭 링크 갱신** (v1.1 신규):
-   - `./user-data/reports/{profile_id}/latest.md` → 방금 저장한 파일로 `ln -sfn`
-   - 실패 시 plain 파일 복사로 fallback
+7. **원본 성분 JSON 백업** :
+ - 파싱된 모든 영양소 mg/µg 수치를 `user-data/stacks/{profile_id}_latest.json`에 저장
+ - `/compact` 후 재분석 시 추정치로 대체되지 않도록 보호
+ - 실패 시 리포트 최상단에 `{{SAVE_FAILURE_BANNER}}` 치환 (리포트 본문은 정상 노출)
+8. **자동 .md 파일 저장** (프로필별 경로):
+ - 저장 경로: `./user-data/reports/{profile_id}/YYYY-MM-DD_HHMM_analysis.md`
+ - 파일명 중복 시 `_2`, `_3` 서픽스
+ - Write 도구로 저장 → `{{FILE_SAVED_PATH}}` 마커에 경로 치환
+9. **`latest.md` 심볼릭 링크 갱신** :
+ - `./user-data/reports/{profile_id}/latest.md` → 방금 저장한 파일로 `ln -sfn`
+ - 실패 시 plain 파일 복사로 fallback
 10. 사용자에게 리포트 전문 노출 + 저장 경로 알림 (`{{FILE_SAVED_PATH}}`)
 
 **모드별 축약 규칙**:
@@ -495,12 +495,12 @@ Claude:
 [Phase 1] 3제품 각각 파싱
 [Phase 2] 정규화 (중복 canonical 감지 준비)
 [Phase 3] 스택 합산 → 비타민 D 합산 150mcg (UL 100mcg 1.5배 초과 🔴)
-         중복 검출 → 비타민 D 2개 제품 중복
+ 중복 검출 → 비타민 D 2개 제품 중복
 [Phase 4] 상호작용 스캔
 [Phase 5] 비타민 D 단독 제품 대체안 조회
 [Phase 6] 리포트 + 스택 최적화 추천
-         📉 감량: 비타민 D (SunD3 중단 또는 격일)
-         ➕ 추가 고려: 마그네슘 (RDA 기준 부족)
+ 📉 감량: 비타민 D (SunD3 중단 또는 격일)
+ ➕ 추가 고려: 마그네슘 (RDA 기준 부족)
 ```
 
 ### 9-4. 제품명만 입력
