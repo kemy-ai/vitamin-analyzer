@@ -4,6 +4,74 @@
 
 ---
 
+## [1.3.0] — 2026-04-18
+
+**Claude Code 플러그인 전환**: 스킬 단독 배포 → 플러그인 + 마켓플레이스 구조. 사용자가 `/plugin install` 두 줄로 설치하고 `/vitamin` 슬래시 커맨드로 호출 가능.
+
+### 배경
+
+v1.2.1까지는 `SKILL.md`를 사용자가 `~/.claude/skills/`로 수동 복사해야 했음. Claude Code 표준 플러그인 배포 체계(docs-guide·vercel 등과 동일 방식)로 전환하여 설치·업데이트·제거를 `/plugin` 명령으로 표준화.
+
+### 설치 방법 변경
+
+**Before (v1.2.x)**:
+```bash
+cp -R vitamin-analyzer ~/.claude/skills/
+```
+
+**After (v1.3.0)**:
+```
+/plugin marketplace add kemy-ai/vitamin-analyzer
+/plugin install vitamin-analyzer@kemy-ai
+```
+
+설치 후 `/vitamin [인자]` 슬래시 커맨드 활성화.
+
+### 디렉토리 구조 재편
+
+```
+vitamin-analyzer/                    # 플러그인 루트
+├── .claude-plugin/
+│   ├── plugin.json                  # 매니페스트 (name·version·description·author)
+│   └── marketplace.json             # 셀프 마켓플레이스 등록
+├── commands/
+│   └── vitamin.md                   # /vitamin 슬래시 커맨드
+├── skills/
+│   └── vitamin-analyzer/            # Skill 본체 (기존 평면 구조를 이 하위로 이동)
+│       ├── SKILL.md
+│       ├── references/
+│       ├── prompts/
+│       └── examples/
+├── README.md, CHANGELOG.md, LICENSE
+```
+
+### 신규 파일
+
+- `.claude-plugin/plugin.json` — 플러그인 매니페스트 (name: vitamin-analyzer, version: 1.3.0, author: kemy-ai)
+- `.claude-plugin/marketplace.json` — 셀프 마켓플레이스 (name: kemy-ai, 단일 플러그인 등록)
+- `commands/vitamin.md` — `/vitamin` 슬래시 커맨드. `$ARGUMENTS` 분기 (빈 인자 → Phase 1 / 인자 있음 → detect-intent 라우터)
+
+### 수정 파일
+
+- `SKILL.md` — version 1.2.1 → 1.3.0. 위치 이동: 루트 → `skills/vitamin-analyzer/SKILL.md`
+- `README.md` — §2 설치 섹션 전면 개편(플러그인 방식 + claude.ai ZIP 업로드 병기). §4 폴더 구조 플러그인 레이아웃 반영. 내부 링크 `skills/vitamin-analyzer/...` 경로로 갱신
+- 기존 `references/` · `prompts/` · `examples/` → `skills/vitamin-analyzer/` 하위로 이동 (내용 변경 없음)
+
+### 슬래시 커맨드 동작
+
+| 입력 | 동작 |
+|------|------|
+| `/vitamin` | Phase 1 프로필 질문부터 풀 분석 시작 (§2-1-A 8개 카테고리 체크리스트 포함) |
+| `/vitamin [자연어]` | `detect-intent.md` 실행 → `quick_check` / `quick_replace` / `full_analysis` 3모드 중 선택 |
+
+### 호환성
+
+- v1.2.x 사용자는 기존 `~/.claude/skills/vitamin-analyzer/` 디렉토리 제거 후 재설치 권장
+- claude.ai 사용자는 `skills/vitamin-analyzer/` 폴더만 ZIP으로 업로드하면 기존 방식과 동일 동작
+- 스킬 내부 로직·프롬프트·참조 파일 **변경 없음** (경로만 이동). 리포트 출력·분석 규칙은 v1.2.1과 동일
+
+---
+
 ## [1.2.1] — 2026-04-18
 
 **의약품 함량 확보 경로 신설**: v1.2.0에서 "식약처 허가정보 API는 성분명만 제공, 함량 미제공" 한계를 보완. nedrug.mfds.go.kr 상세 페이지 "원료약품 및 분량" 테이블 HTML 파싱을 Fallback Chain에 정식 편입.

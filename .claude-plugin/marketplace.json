@@ -1,0 +1,18 @@
+{
+  "name": "kemy-ai",
+  "owner": {
+    "name": "kemy-ai",
+    "url": "https://github.com/kemy-ai"
+  },
+  "description": "kemy-ai가 배포하는 Claude Code 플러그인 모음",
+  "plugins": [
+    {
+      "name": "vitamin-analyzer",
+      "source": ".",
+      "description": "근거 기반 비타민·보충제·OTC 의약품 스택 분석기 (한국 건기식 + 의약품 통합)",
+      "version": "1.3.0",
+      "category": "health",
+      "tags": ["vitamin", "supplement", "nutrition", "korean", "kfda", "health"]
+    }
+  ]
+}
