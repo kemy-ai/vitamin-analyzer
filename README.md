@@ -17,6 +17,27 @@
 
 ---
 
+## 🚀 Quick Start (Claude Code)
+
+**설치 (두 줄):**
+```
+/plugin marketplace add kemy-ai/vitamin-analyzer
+/plugin install vitamin-analyzer@kemy-ai
+```
+
+**사용:**
+```
+/vitamin                                     ← 프로필 질문부터 풀 분석
+/vitamin 비맥스제트 먹는데 괜찮은지 봐줘       ← 자연어 질문 (자동 의도 분류)
+/vitamin 종합비타민 + D3 5000 + 마그네슘 스택  ← 복수 제품 스택 분석
+```
+
+**제거:** `/plugin uninstall vitamin-analyzer@kemy-ai` → `/plugin marketplace remove kemy-ai`
+
+> claude.ai (웹)에서 쓰시려면 [§2-2](#2-2-claudeai-skill-단독-업로드) 참고 — `skills/vitamin-analyzer/` 폴더를 ZIP으로 업로드.
+
+---
+
 ## 1. 핵심 기능
 
 | 기능 | 설명 |
