@@ -2,7 +2,7 @@
 name: vitamin-analyzer
 description: Help users audit their supplement stack and answer the quiet question behind every vitamin bottle — "Am I actually covering what I need? Am I doubling up? Is anything over the upper limit?" Guides the user on a journey to optimize their vitamin portfolio with evidence-based analysis. Activates when the user shares a supplement name, ingredient list, or Supplement Facts label photo, optionally with personal context (age, biological sex, symptoms, pregnancy, prescription drugs). Returns a Korean (default) or English markdown report covering RDA gaps, UL overages, duplicate ingredients, drug/supplement interactions, and domestic + overseas (iHerb) alternative product suggestions — every medical claim backed by Tier 1–2 citations from the U.S. National Institutes of Health Office of Dietary Supplements (NIH ODS), PubMed (National Library of Medicine), Cochrane Library systematic reviews, Examine.com, and the Korean Ministry of Food and Drug Safety (식약처) public Open APIs for both domestic health functional foods (C003/I2710) and OTC / prescription drugs (product approval, patient-friendly summaries, pill identification) when KFDA_HTFS_KEY / KFDA_FOODSAFETY_KEY env vars are set. Automatically routes between health-food and drug APIs so OTC multivitamins (e.g. 비맥스, 아로나민, 센트룸) are correctly identified when not registered as health functional foods. Supports multiple user-named profiles (self, family, friends) and three intent modes (quick_check / quick_replace / full_analysis) to match answer depth to question depth. Persists product DB, stack JSON, and reports under ./user-data/. Declines analyses for under-12 and pets; never issues prescription-drug dosing advice.
 license: MIT
-version: 1.2.0
+version: 1.2.1
 ---
 
 # Vitamin Analyzer — 보충제 분석 Skill
@@ -236,14 +236,15 @@ Phase 0 직후 실행. 사용자 발화의 깊이에 맞는 모드를 선택.
 3. 현재 판독된 부분만으로 분석 진행 (일부 성분 누락 가능, 권장 X)
 ```
 
-#### 4-1-3. 제품명만 입력 — Fallback Chain v3 (KFDA 건기식 + 의약품 통합)
+#### 4-1-3. 제품명만 입력 — Fallback Chain v3.1 (KFDA 건기식 + 의약품 통합 + 함량 스크래핑)
 
-**핵심 원칙 (2026-04-17 v3 — 의약품 API 통합)**:
+**핵심 원칙 (2026-04-18 v3.1 — nedrug 상세 스크래핑 통합)**:
 - 한국 제품 → **식약처 Open API가 1차 근거** (건기식 C003 → 의약품 허가정보 순차 조회)
 - 건기식 0건 ≠ "모른다". **자동으로 의약품 API 폴백** (OTC 종합비타민이 건기식이 아닌 의약품인 경우 많음 — 비맥스·아로나민·센트룸 등)
+- **의약품은 Open API만으로 함량 확보 불가** (허가정보 API는 성분명만 제공). ITEM_SEQ 확보 후 **nedrug 상세 페이지 "원료약품 및 분량" 테이블을 필수 파싱** → 진짜 함량(mg/IU/µg)·규격(KP/USP/EP/별규)·환산값(으로서 X mg) 확보
 - 라벨 사진 업로드 시 → OCR + 적절한 API 교차검증 (**라벨 값이 ground truth**)
 - 해외 제품은 식약처 미등록 → Perplexity/공식몰/iHerb 체인으로 폴백
-- 전체 규칙: `references/kfda-htfs-api.md` (건기식), `references/kfda-drug-api.md` (의약품)
+- 전체 규칙: `references/kfda-htfs-api.md` (건기식), `references/kfda-drug-api.md` (의약품 API + §9 nedrug 스크래핑)
 
 ```
 Step A: 사용자 라벨 사진 요청 (항상 1순위 질문)
@@ -267,14 +268,14 @@ Step C: ★ 식약처 C003 API (건강기능식품 1차 근거)
    * 6건+ → 좁히기 질문 (제조사 → 제형 → 함량 → 구매시기 순)
    * 0건 → ★ Step C2로 (건기식 미등록 = 의약품 가능성)
 
-Step C2: ★ 식약처 의약품 API (일반의약품/전문의약품 폴백) [v3 신규]
+Step C2-a: ★ 식약처 의약품 Open API (일반의약품/전문의약품 폴백) [v3 신규, v3.1 재구성]
  - 조건: env KFDA_HTFS_KEY 설정됨 (또는 KFDA_DRUG_KEY)
  - 엔드포인트 순차:
-   1. DrugPrdtPrmsnInfoService07/getDrugPrdtPrmsnInq07?item_name={제품명}  (허가정보)
-   2. 매칭 시 ITEM_SEQ 확보 → DrbEasyDrugInfoService/getDrbEasyDrugList?itemName={제품명}&itemSeq={seq}  (환자용 요약)
+   1. DrugPrdtPrmsnInfoService07/getDrugPrdtPrmsnInq07?item_name={제품명}  (허가정보 — 성분명·분류·제조사·ITEM_SEQ)
+   2. 매칭 시 ITEM_SEQ 확보 → DrbEasyDrugInfoService/getDrbEasyDrugList?itemName={제품명}&itemSeq={seq}  (환자용 요약: 효능·용법·주의사항)
    3. (선택) 라벨 사진에 각인 있으면 → MdcinGrnIdntfcInfoService03/getMdcinGrnIdntfcInfoList03?print_front={각인}  (낱알식별)
  - 결과 처리 (kfda-drug-api.md §4-4):
-   * 1건 → prompts/parse-drug-response.md로 3개 API 병합 구조화 → Step X
+   * 1건 → ITEM_SEQ 확보 → **반드시 Step C2-b 진행** (함량 확보 필수)
    * 2~5건 → 리스트 제시
    * 6건+ → entp_name(제조사)로 좁히기
    * 0건 → Step D로
@@ -282,6 +283,20 @@ Step C2: ★ 식약처 의약품 API (일반의약품/전문의약품 폴백) [v
    * "일반의약품" → 성분·효능·상호작용 리포트. "의사/약사 상담" 디스클레이머 필수
    * "전문의약품" → 식별·상호작용까지만. 복용량/대체 섹션 자동 생략 + 상단 배너 의무 (kfda-drug-api.md §8)
    * "정상" 외(취소/변경) → 분석 중단 + "최신 정보 확인 필요" 에러
+
+Step C2-b: ★ nedrug 상세 페이지 "원료약품 및 분량" 파싱 [v3.1 신규 — 함량 확보 필수 경로]
+ - 조건: Step C2-a에서 ITEM_SEQ 확보됨
+ - 엔드포인트: GET https://nedrug.mfds.go.kr/pbp/CCBBB01/getItemDetail?itemSeq={ITEM_SEQ}
+ - 필수 헤더:
+   User-Agent: Mozilla/5.0 (일반 브라우저 UA)
+   Referer: https://nedrug.mfds.go.kr/
+ - 파싱 대상: HTML 내 "원료약품 및 분량" 테이블 (<thead>성분명 | 분량 | 단위 | 규격 | 성분정보</thead> 블록) — prompts/parse-drug-response.md §5
+ - 각 행 추출: 순번 / 성분명(한글) / 분량(숫자) / 단위(밀리그램·마이크로그램·아이.유 등) / 규격(KP·USP·EP·별규) / 성분정보(환산: "X(으)로서 Y 단위")
+ - 환산 처리: "아연(으)로서 24.1 밀리그램" → elemental_amount_mg = 24.1. UL/RDA 평가는 elemental 기준이 있으면 우선
+ - 결과 처리:
+   * 성공(≥1행 파싱) → 통합 JSON에 ingredients[] 실함량 주입 → Step X (confidence: high)
+   * 실패(테이블 비어있거나 5xx) → 최대 2회 재시도(10초 간격) → 그래도 실패면 Step D(Perplexity)로 폴백 + 리포트 상단 "nedrug 함량 미확보 — 공식 라벨 또는 PDF 첨부문서 참조 권고" 배너
+ - 약관: 공공 서비스(식약처)이나 과도한 반복 호출 금지. 캐시(Step B) 우선. 동일 ITEM_SEQ 재조회 금지
 
 Step B-KFDA: 라벨 사진 교차검증 (Step A에서 사진 받았을 때만)
  - 라벨에 "건강기능식품" 마크 → C003 조회
@@ -321,7 +336,8 @@ Step X (공통): 성공 시 적절한 위치에 저장
 |-----------|-------|-------|-------|----------|
 | 라벨 사진 (건기식 마크) | Step A | — | — | Step B-KFDA → C003 |
 | 라벨 사진 (의약품 마크) | Step A | — | — | Step B-KFDA → 허가정보 |
-| 한국 제품명 | Step C (C003) | **Step C2 (의약품)** | Step D | — |
+| 한국 제품명 (건기식) | Step C (C003) | Step D | — | — |
+| 한국 제품명 (의약품) | Step C2-a (Open API) | **Step C2-b (nedrug 함량)** | Step D | — |
 | 해외 제품명 | Step D | Step E/F | — | — |
 | 제품명+라벨 | Step A + 자동라우팅 | — | — | Step B-KFDA |
 
@@ -330,10 +346,11 @@ Step X (공통): 성공 시 적절한 위치에 저장
 - 공식몰 "상품상세페이지 참조" 텍스트만 있으면 **실패 판정** (L4)
 - **추측/환각 금지**: 못 찾으면 지어내지 말 것. `{unit}` 미상이면 `null` + confidence: "low"
 - **KFDA 키 미설정 시**: Step C/C2 건너뛰고 Step D로. 리포트 상단에 "KFDA 미연동 — 설치 가이드 참조" 배너 1회
-- **의약품↔건기식 혼동 금지**: Step C에서 0건이어도 Step C2를 반드시 시도해야 OTC 종합비타민(비맥스·아로나민 등)을 놓치지 않음
+- **의약품↔건기식 혼동 금지**: Step C에서 0건이어도 Step C2-a를 반드시 시도해야 OTC 종합비타민(비맥스·아로나민 등)을 놓치지 않음
+- **Step C2-a 성공 → Step C2-b 필수**: Open API만으로 끝내면 함량이 전부 "비공개"로 남아 UL/RDA 정량 평가 불가. Step C2-b 생략 금지 (파싱 실패 시에만 Step D로 폴백 허용)
 
 **추가 규칙**:
-- Step A~G 각 단계 **실제 시도**했음을 내부 로그로 추적 → 사용자에게 "Step C에서 0건 → Step C2에서 일반의약품 1건 확정" 등 투명하게 보고
+- Step A~G 각 단계 **실제 시도**했음을 내부 로그로 추적 → 사용자에게 "Step C에서 0건 → Step C2-a에서 일반의약품 1건 확정 → Step C2-b에서 21성분 함량 확보" 등 투명하게 보고
 - 동일 세션 내 동일 제품 재조회 금지 (Step B DB hit로 해결)
 - KFDA 응답 원문은 로컬 캐시에만. 외부 전송 금지 (kfda-htfs-api.md §10 / kfda-drug-api.md §10)
 - 의약품 데이터는 `references/kfda-drug-api.md §0` 범위 경계 엄격 준수 — 복용량 증감/대체 제안 금지

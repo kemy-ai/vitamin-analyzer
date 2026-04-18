@@ -196,22 +196,149 @@
 
 ## 4. 함량 정보 처리
 
-### 4-1. 허가정보에는 함량이 없다 (★중요)
+### 4-1. 허가정보 API에는 함량이 없다 (배경)
 - `ITEM_INGR_NAME`은 성분명만 `/` 구분 리스트. mg·µg 없음
-- **정확한 함량을 얻으려면**:
+- **정확한 함량을 얻으려면 §4-B nedrug 상세 페이지 파싱이 필수** (v1.2.1 신규 경로)
+- nedrug 파싱 실패 시 fallback:
   1. 라벨 사진에서 OCR (`parse-image.md` 사용)
-  2. 제품설명서 (PDF 링크가 별도 API에 있으나 미통합)
-  3. 사용자에게 "라벨 사진 있으세요?" 질문
+  2. 사용자에게 "라벨 사진 있으세요?" 질문
+  3. Perplexity 조회
 
-### 4-2. 함량 없이 수행 가능한 분석
+### 4-2. 함량 확보 경로 우선순위 (v1.2.1)
+
+```
+1순위: 라벨 사진 OCR (사용자가 제공 시) — ground truth
+2순위: nedrug 상세 페이지 파싱 (§4-B)  ← v1.2.1 기본 경로
+3순위: Perplexity / WebSearch
+4순위: 함량 없이 정성 분석만 (§4-3)
+```
+
+### 4-3. 함량 없이 수행 가능한 분석 (모든 경로 실패 시)
 - **성분 존재 여부** 크로스체크 (보충제 스택과 중복 확인)
 - **UL 초과 위험 존재** (함량 미상이지만 고함량 의약품일 수 있음) — 정성적 경고
 - **상호작용 경고**
 
-### 4-3. 함량 없이 불가능한 분석
+### 4-4. 함량 없이 불가능한 분석
 - RDA 대비 % 계산
 - 총 일일 섭취량 합산
 - "부족" / "초과" 정량 판정
+
+---
+
+## 4-B. nedrug 상세 페이지 "원료약품 및 분량" 파싱 (★v1.2.1 신규)
+
+> 전체 엔드포인트 규격 및 에러 정책은 `references/kfda-drug-api.md §6-B`. 이 섹션은 프롬프트/파서가 실제로 수행할 단계만 기술한다.
+
+### 4-B-1. 전제 조건
+
+- Step C2-a에서 `ITEM_SEQ` 확보된 경우에만 수행
+- 동일 ITEM_SEQ가 `user-data/drugs/` DB에 `material_source: "nedrug_scrape"` + `verified_at` 1년 이내로 저장돼 있으면 **스킵**(캐시 재사용)
+
+### 4-B-2. 호출
+
+```
+GET https://nedrug.mfds.go.kr/pbp/CCBBB01/getItemDetail?itemSeq={ITEM_SEQ}
+
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+Referer:    https://nedrug.mfds.go.kr/
+```
+
+스킬 아키텍처 원칙: Claude WebFetch 사용. 자체 크롤러·병렬 루프 금지.
+
+### 4-B-3. HTML에서 테이블 블록 추출
+
+1. `<th>성분명</th>` 부터 `</tbody>` 까지 한 블록 capture
+2. 태그를 `|` 구분자로 치환 → 공백 정리 → `|순번|성분명|분량|단위|규격|성분정보|비교|` 형태 레코드 반복
+3. 행 구분자 사이에 나타나는 `/*|*/` (Thymeleaf 주석 잔재)는 무시
+
+참고 정규식:
+```python
+# Python 예시 (프롬프트 밖 구현 참고용)
+import re
+m = re.search(r'(<th[^>]*>\s*성분명.*?</tbody>)', html, re.DOTALL)
+tb  = re.sub(r'<[^>]+>', '|', m.group(1))
+tb  = re.sub(r'\s+', ' ', tb)
+# "| |1| |벤포티아민| |100| |밀리그램| |KP| |티아민염산염(으)로서 72.3 밀리그램| ..."
+```
+
+### 4-B-4. 행 → JSON 매핑
+
+각 데이터 행:
+
+| 원문 위치 | JSON 필드 | 타입 | 비고 |
+|---------|----------|------|------|
+| 1열 순번 | `seq` | int | — |
+| 2열 성분명 | `name_ko` | str | 한글. §3 매핑 테이블로 `alias_id` 생성 |
+| 3열 분량 | `amount` | float | 숫자만. 콤마 제거 |
+| 4열 단위 | `unit` | enum | `밀리그램→mg` / `마이크로그램→µg` / `아이.유/국제단위→IU` / `그램→g` |
+| 5열 규격 | `standard` | enum | `KP`/`USP`/`EP`/`별규` |
+| 6열 성분정보 | `elemental` | obj? | "X(으)로서 Y 단위" 패턴 파싱 |
+| 7열 비교 | (무시) | — | 대부분 빈 값 |
+
+### 4-B-5. elemental(환산) 파싱
+
+```
+"티아민염산염(으)로서 72.3 밀리그램"
+ → elemental: { "basis": "티아민염산염", "amount": 72.3, "unit": "mg" }
+
+"아연(으)로서 24.1 밀리그램"
+ → elemental: { "basis": "아연",        "amount": 24.1, "unit": "mg" }
+
+"비타민 D(으)로서 1000 아이.유"
+ → elemental: { "basis": "비타민 D",    "amount": 1000,  "unit": "IU" }
+```
+
+정규식:
+```
+r'(.+?)\(?으\)?로서\s+([\d.]+)\s+(밀리그램|마이크로그램|아이\.유|국제단위|그램)'
+```
+
+환산값이 **없으면** `elemental: null`. 있는 경우 UL/RDA 평가는 **elemental 기준** 우선.
+
+### 4-B-6. 출력 예시
+
+```json
+{
+  "item_seq": "202300436",
+  "material_source": "nedrug_scrape",
+  "material_fetched_at": "2026-04-18T06:50:00+09:00",
+  "partial": false,
+  "ingredients": [
+    {
+      "seq": 1, "name_ko": "벤포티아민", "alias_id": "vitamin_b1",
+      "amount": 100, "unit": "mg", "standard": "KP",
+      "elemental": { "basis": "티아민염산염", "amount": 72.3, "unit": "mg" }
+    },
+    {
+      "seq": 10, "name_ko": "제피아스코르브산", "alias_id": "vitamin_c",
+      "amount": 51.15, "unit": "mg", "standard": "별규",
+      "elemental": { "basis": "아스코르브산", "amount": 50, "unit": "mg" }
+    },
+    {
+      "seq": 21, "name_ko": "산화마그네슘", "alias_id": "magnesium",
+      "amount": 100, "unit": "mg", "standard": "KP",
+      "elemental": { "basis": "마그네슘", "amount": 60.3, "unit": "mg" }
+    }
+  ]
+}
+```
+
+### 4-B-7. 실패 처리
+
+| 상황 | 동작 |
+|------|------|
+| HTTP 5xx | 최대 2회 재시도(10초) → 실패 시 Step D(Perplexity)로 |
+| 테이블 블록 자체 감지 안 됨 | `material_source: "nedrug_empty"` 태깅 → Step D 폴백 |
+| 일부 행만 파싱 | `partial: true` + 파싱 성공한 행만 `ingredients[]`에 포함. 실패 행의 원문은 `parse_errors[]`에 기록 (추측 금지) |
+| 단위/숫자 이상 | 해당 행 `amount: null` + `warning: "parse_error"` |
+
+### 4-B-8. 중복 성분 처리
+
+비맥스제트처럼 **같은 비타민의 다른 활성형이 2개 이상** 포함된 경우(벤포티아민 + 비스벤티아민 = 둘 다 B1):
+
+- `alias_id`가 중복되면 별개 레코드로 보존
+- 리포트 집계 단계에서 elemental 기준으로 합산 (`total_by_alias[alias_id] = Σ elemental.amount`)
+- 합산 결과에 "(벤포티아민 + 비스벤티아민 합산)" 같은 출처 주석 자동 생성
 
 ---
 

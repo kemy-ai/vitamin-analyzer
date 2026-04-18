@@ -218,7 +218,8 @@ GET https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList
 ```
 1. DrugPrdtPrmsnInfoService07 조회 → ITEM_INGR_NAME 전 성분 + SPCLTY_PBLC 확인
 2. ITEM_SEQ 확보 → DrbEasyDrugInfoService 조회 → 효능·용법·주의·상호작용 획득
-3. 보충제 스택과 교차검증 (parse-drug-response.md의 RDA 매칭)
+3. ★ ITEM_SEQ로 §6-B nedrug 상세 페이지 파싱 → 성분별 함량·단위·규격·환산값 확보
+4. 보충제 스택과 교차검증 (parse-drug-response.md의 RDA 매칭)
 ```
 
 ### 6-2. 사진만 있는 경우
@@ -235,6 +236,127 @@ GET https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList
 
 ---
 
+## 6-B. nedrug 상세 페이지 — "원료약품 및 분량" 스크래핑 (★v1.2.1 신규)
+
+### 6-B-1. 배경
+
+세 Open API(허가정보·e약은요·낱알식별) 어디에도 **성분별 함량(mg/IU/µg) 필드는 없다**. 허가정보 API의 `ITEM_INGR_NAME`은 21개 성분명을 `/`로 이어붙인 텍스트일 뿐 분량은 미포함. UL/RDA 정량 평가를 위해서는 **식약처 의약품안전나라(nedrug) 제품상세 페이지의 "원료약품 및 분량" 테이블**이 유일한 공공 1차 근거.
+
+### 6-B-2. 엔드포인트
+
+```
+GET https://nedrug.mfds.go.kr/pbp/CCBBB01/getItemDetail?itemSeq={ITEM_SEQ}
+```
+
+**필수 헤더**:
+```
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+Referer:    https://nedrug.mfds.go.kr/
+```
+
+(UA·Referer 누락 시 빈 HTML 반환. 검증됨 2026-04-18.)
+
+### 6-B-3. 응답 구조
+
+- `Content-Type: text/html; charset=UTF-8`
+- Thymeleaf 서버사이드 렌더링 → **JS 실행 없이 정적 파싱 가능**
+- HTML 길이 1,200~2,000줄 수준. 핵심은 "원료약품 및 분량" 테이블 한 블록
+
+### 6-B-4. 파싱 대상 테이블
+
+HTML 안에서 `<th>성분명</th> … <th>분량</th> … <th>단위</th> … <th>규격</th> … <th>성분정보</th>`로 시작하는 `<thead>` 블록과 이어지는 `<tbody>`를 추출한다.
+
+각 `<tr>`의 셀 순서:
+
+| 열 | 컬럼 | 예시 | 파싱 타입 |
+|---|------|------|---------|
+| 1 | 순번 | `1` | int |
+| 2 | 성분명 (한글) | `벤포티아민` | str |
+| 3 | 분량 | `100` | float |
+| 4 | 단위 | `밀리그램` / `마이크로그램` / `아이.유` / `그램` | enum (정규화 대상) |
+| 5 | 규격 | `KP` / `USP` / `EP` / `별규` | enum |
+| 6 | 성분정보 | `티아민염산염(으)로서 72.3 밀리그램` | optional, 환산 파싱 |
+| 7 | 비교 | (대부분 비어있음) | optional |
+
+### 6-B-5. 단위 정규화
+
+| 원문 | 표준 (output) |
+|------|-------------|
+| `밀리그램` | `mg` |
+| `마이크로그램` | `µg` |
+| `아이.유` / `국제단위` | `IU` |
+| `그램` | `g` |
+
+### 6-B-6. 환산값 파싱 규칙
+
+"성분정보" 컬럼의 **"X(으)로서 Y 단위"** 패턴은 **elemental amount 또는 활성 성분 기준량**을 의미. UL/RDA 평가 우선순위:
+
+```
+elemental_amount (있으면) > 원료 분량
+예시:
+  산화아연 30 mg / 성분정보 "아연(으)로서 24.1 밀리그램"
+  → elemental_amount = 24.1 mg (Zn 기준)
+  → UL 40 mg/일 평가는 elemental 24.1 기준
+
+  산화마그네슘 100 mg / 성분정보 "마그네슘(으)로서 60.3 밀리그램"
+  → elemental_amount = 60.3 mg (Mg 기준)
+
+  콜레칼시페롤농축분말 10 mg / 성분정보 "비타민 D(으)로서 1000 아이.유"
+  → elemental_amount = 1000 IU
+```
+
+정규식 제안 (참고):
+```
+r'(.+?)\(으\)?로서\s+([\d.]+)\s+(밀리그램|마이크로그램|아이\.유|국제단위|그램)'
+→ group(1)=분자, group(2)=수량, group(3)=단위
+```
+
+### 6-B-7. 실패 / 부분 파싱
+
+| 상황 | 대응 |
+|------|------|
+| HTTP 5xx | 최대 2회 재시도 (10초 간격) |
+| HTTP 200 + 테이블 없음 | `material_source: "nedrug_empty"` 태그 후 Step D(Perplexity)로 폴백 |
+| 일부 행만 파싱 가능 | 파싱된 행만 채우고 `partial: true` + 미파싱 성분 ID 배열 기록 |
+| 비정상 단위/숫자 | 해당 행은 `amount: null, warning: "parse_error"` — 추측 금지 |
+
+### 6-B-8. 약관·레이트 제한
+
+- **공공 서비스 — 과도한 호출 금지**. 같은 세션에서 동일 ITEM_SEQ 재조회 금지 (캐싱 대체)
+- 스킬 아키텍처 원칙상 **Claude WebFetch로 호출**하고 자체 크롤러·병렬 호출 금지
+- 2026-04-18 기준 `robots.txt` 정책 확인됨 — 공개 제품상세 페이지 접근 허용
+- 캐시 TTL은 §7 기준(365일) 동일 적용
+
+### 6-B-9. 출력 스키마 (parse-drug-response.md §5와 동일)
+
+```json
+{
+  "item_seq": "202300436",
+  "material_source": "nedrug_scrape",
+  "material_fetched_at": "2026-04-18T06:50:00+09:00",
+  "ingredients": [
+    {
+      "seq": 1,
+      "name_ko": "벤포티아민",
+      "amount": 100,
+      "unit": "mg",
+      "standard": "KP",
+      "elemental": { "basis": "티아민염산염", "amount": 72.3, "unit": "mg" }
+    },
+    ...
+  ],
+  "partial": false
+}
+```
+
+### 6-B-10. 검증 완료 사례
+
+| 제품 | ITEM_SEQ | 성분 수 | 결과 |
+|------|---------|--------|------|
+| 비맥스제트정 (한풍제약) | 202300436 | 21 | ✅ 100% 파싱 (2026-04-18 검증) |
+
+---
+
 ## 7. 캐싱 전략
 
 ### 7-1. 제품 DB 파일
@@ -247,6 +369,7 @@ user-data/drugs/{drug_key}.json
 ### 7-2. 저장 시점
 - `DrugPrdtPrmsnInfoService07` 조회 성공 + 사용자 확정 후
 - `DrbEasyDrugInfoService` 필드는 같은 파일에 병합 저장
+- **§6-B nedrug 파싱 결과(`ingredients[]` 함량)도 같은 파일에 병합** — `material_source: "nedrug_scrape"`, `material_fetched_at` 태깅
 
 ### 7-3. 재조회 조건
 - `verified_at` 365일 초과 → 재조회
