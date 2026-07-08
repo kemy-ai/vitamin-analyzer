@@ -115,7 +115,7 @@ export KFDA_FOODSAFETY_KEY="..."    # foodsafetykorea 20자
 ```
 
 **3) 스킬 파일에 키 하드코딩 금지**
-로컬 테스트용 별도 파일(`.kfda-test-keys`)에만 보관. `.gitignore` + `chmod 600` 필수.
+키는 환경변수로만 관리(위 2번). 로컬 테스트용 키 파일을 따로 둘 경우 `.gitignore` + `chmod 600` 필수.
 
 **제공 기능**:
 - C003 API: 국내 건강기능식품 6만+ 제품 성분·함량·용법 (정부 공식 DB)

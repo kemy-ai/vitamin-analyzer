@@ -32,7 +32,7 @@
 - 환경변수명: `KFDA_HTFS_KEY` (HtfsInfoService03용, 64자 hex), `KFDA_FOODSAFETY_KEY` (C003/I0030/I2710용, 20자)
 - 스킬 파일·문서·예시 어디에도 **실제 키 하드코딩 금지**
 - 호출 전 env 존재 확인 → 없으면 "KFDA 연동 미설정" 배너 + 다른 Fallback 단계로 진행
-- 로컬 테스트용 `.kfda-test-keys` 파일은 `.gitignore` + `chmod 600`
+- 키는 환경변수 관리가 기본. 로컬 테스트용 키 파일을 따로 둘 경우 `.gitignore` + `chmod 600`
 - 외부 공유·커밋·스킬 업로드 전 `grep -r "[0-9a-f]\{20,\}" .` 로 누출 점검
 
 ### 2-2. 호출 공통 규칙
