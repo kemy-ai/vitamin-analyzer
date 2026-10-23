@@ -4,6 +4,19 @@
 
 ---
 
+## [1.3.1] - 2026-10-23
+
+**SKILL.md 분량 축소**: Phase별 실행 상세(§4)를 별도 파일로 분리. 분석 동작·안전 규칙은 바뀌지 않음.
+
+### Changed
+
+- `SKILL.md` - §4 "Phase별 상세"(Phase 0-A부터 6까지) 본문을 `references/phase-details.md`로 이동. SKILL.md에는 Read 안내만 남김 (757줄 → 379줄). §6 거부 프로토콜·§8 절대 규칙·프로필 안전 규칙은 SKILL.md 본문에 그대로 유지
+- `references/phase-details.md` - 신규. 원문 §4를 그대로 옮기고, 파일이 나뉘며 모호해진 참조 1곳을 `SKILL.md §6`으로 명시. 공개 레포에 없는 내부 개발 문서 참조 1곳 제거
+- §4-1-3 Fallback Chain 참조 경로 갱신: `SKILL.md` §3 파이프라인, `commands/vitamin.md`, `examples/otc-comparison-sample.md`
+- `README.md` - 상세 구조에 `phase-details.md`와 누락돼 있던 `kfda-drug-api.md` 추가
+
+---
+
 ## [1.3.0] — 2026-04-18
 
 **Claude Code 플러그인 전환**: 스킬 단독 배포 → 플러그인 + 마켓플레이스 구조. 사용자가 `/plugin install` 두 줄로 설치하고 `/vitamin` 슬래시 커맨드로 호출 가능.

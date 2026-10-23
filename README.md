@@ -207,6 +207,7 @@ vitamin-analyzer/                    # Claude Code 플러그인 루트
 skills/vitamin-analyzer/
 ├── SKILL.md
 ├── references/                      # Lookup 데이터
+│   ├── phase-details.md             # Phase 0-A부터 6까지 실행 상세 (SKILL.md §4 본문)
 │   ├── ingredient-aliases.md        # 100종 한/영/라틴 동의어 + 단위 변환식
 │   ├── rda-table.md                 # 28영양소 RDA/UL (NIH + KDRI)
 │   ├── bioavailability-table.md     # 성분 형태별 흡수율 (산화·글리시네이트·메틸폴레이트 등)
@@ -215,6 +216,7 @@ skills/vitamin-analyzer/
 │   ├── interaction-patterns.md      # 20종 상호작용 (약물 12 + 보충제 5 + 음식 3)
 │   ├── user-data-schema.md          # profiles/products/stacks/reports JSON 스키마
 │   ├── kfda-htfs-api.md             # 식약처 Open API 4종 엔드포인트·필드·교차검증 규칙
+│   ├── kfda-drug-api.md             # 식약처 의약품 API 3종 (낱알식별·허가정보·e약은요) + 범위 경계
 │   ├── korean-intake-limits.md      # I2710 큐레이션 (28영양소 + 기능성 12종 한국 공식 섭취 기준)
 │   └── disclaimer.md                # 한/영 면책 + 4종 조건부 배너
 ├── prompts/                         # 단계별 프롬프트
@@ -308,6 +310,7 @@ MIT License. 단, 본 Skill은 **의학적 조언을 대체하지 않음**. 모�
 
 ## 11. 버전
 
+- **v1.3.1 (2026-10-23)**: SKILL.md의 Phase별 상세를 `references/phase-details.md`로 분리 (동작 변경 없음)
 - **v1.3.0 (2026-04-18)**: Claude Code 플러그인 구조로 전환. `/vitamin` 슬래시 커맨드 + `/plugin install` 지원
 - **v1.2.1 (2026-04-18)**: nedrug 상세 페이지 HTML 파싱 추가 — 의약품 함량 확보 경로 신설
 - **v1.2.0 (2026-04-17)**: 범위 확장 — 건기식 + OTC 일반의약품 + 전문의약품 통합 분석

@@ -36,7 +36,7 @@ argument-hint: "[질문 또는 제품명 — 비워두면 프로필 질문부터
 
 ### Step 3. 데이터 소스 Fallback Chain 준수
 
-SKILL.md §4-1-3의 Fallback Chain v3.1을 엄격히 따릅니다:
+`references/phase-details.md` §4-1-3의 Fallback Chain v3.1을 엄격히 따릅니다:
 1. 라벨 사진 (사용자 업로드)
 2. 제품 DB (`user-data/products/*.json` — 플러그인 외부 · 사용자 디렉토리)
 3. Perplexity MCP

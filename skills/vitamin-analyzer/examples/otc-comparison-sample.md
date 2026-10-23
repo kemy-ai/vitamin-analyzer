@@ -1,6 +1,6 @@
 # Example 4 — 보충제 + OTC 종합비타민 혼합 분석
 
-> **용도**: v1.2.0 의약품 API 통합 플로우 검증. 건강기능식품(보충제) + 일반의약품(OTC)이 한 스택에 섞여 있을 때 `SKILL.md §4-1-3` Fallback Chain v3의 Step C → Step C2 자동 전환, `parse-drug-response.md` 병합 파싱, `report-template.md §8-A #11~#13` 금지 규약 준수를 확인.
+> **용도**: v1.2.0 의약품 API 통합 플로우 검증. 건강기능식품(보충제) + 일반의약품(OTC)이 한 스택에 섞여 있을 때 `references/phase-details.md §4-1-3` Fallback Chain v3의 Step C → Step C2 자동 전환, `parse-drug-response.md` 병합 파싱, `report-template.md §8-A #11~#13` 금지 규약 준수를 확인.
 > **페르소나**: 43세 남성, 가상 인물. 만성 피로 호소로 종합비타민 OTC 구매 후 기존 보충제와 중복 우려.
 > **대상 제품**: 가상 보충제 **NutriCore Daily-B** (건기식) + 가상 OTC **Mega-Z Multi-Tab** (일반의약품, 비맥스제트를 모델로 한 가상 종합비타민제).
 > **테스트 포커스**: (a) C003 0건 후 Step C2 자동 폴백 (b) 라틴명 `ITEM_INGR_NAME` 정규화 (c) 의약품↔보충제 성분 중복 표 생성 (d) 의약품 복용량 조정 금지 규약 준수 (§8-A #11).
