@@ -375,10 +375,11 @@ Step X (공통): 성공 시 적절한 위치에 저장
  - `./user-data/reports/{profile_id}/latest.md` → 방금 저장한 파일로 `ln -sfn`
  - 실패 시 plain 파일 복사로 fallback
 10. 사용자에게 리포트 전문 노출 + 저장 경로 알림 (`{{FILE_SAVED_PATH}}`)
+11. **대시보드 (요청 시만)**: `--dashboard` 또는 자연어 요청이 있을 때만 `prompts/render-dashboard.md` 절차로 `./user-data/reports/{profile_id}/YYYY-MM-DD_HHMM_dashboard.html` 생성 후 브라우저로 연다. `full_analysis`에서는 반드시 8단계(마크다운 저장) **뒤**에 한다 (quick 모드는 8단계가 없으니 바로). 요청이 없으면 건너뛴다. `infant_or_pet: true`면 만들지 않는다
 
 **모드별 축약 규칙**:
-- `quick_check` — Phase 6는 **대화 내 응답만**, 파일 저장 없음 (Step 7/8/9 모두 스킵). `{{SUGGESTION}}` 마커만 사용
-- `quick_replace` — 대체후보 표만 저장 선택 가능 (사용자가 "저장해줘" 할 때만). Step 7(stack 백업)은 건너뜀
-- `full_analysis` — 위 10단계 전체 실행
+- `quick_check` — Phase 6는 **대화 내 응답만**, 파일 저장 없음 (Step 7/8/9 모두 스킵). `{{SUGGESTION}}` 마커만 사용. 단 대시보드를 직접 요청하면 Step 11로 질문에 나온 제품만 담은 HTML 하나를 저장한다
+- `quick_replace` — 대체후보 표만 저장 선택 가능 (사용자가 "저장해줘" 할 때만). Step 7(stack 백업)은 건너뜀. 대시보드 직접 요청 시 Step 11 (quick_check와 같은 범위)
+- `full_analysis` — 위 10단계 전체 실행 + 요청 시 Step 11
 
 ---

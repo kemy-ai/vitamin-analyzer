@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Supplement stack dashboard</title>
+<style>
+:root{color-scheme:light;
+  --fg:#1f1d1a;--muted:#6b665e;--bg:#f6f4f0;--panel:#ffffff;--line:#e4e0d8;
+  --ok:#23864f;--warn:#b05f0a;--bad:#c2412d;
+  --r:12px;--gap-sm:8px;--gap-md:12px;--gap-lg:20px;--pad-sm:10px;--pad-md:14px;--pad-lg:20px;
+  --fs-title:1.75rem;--fs-h:1.0625rem;--fs-body:.9375rem;--fs-cap:.8125rem;
+  --sans:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic","Segoe UI",sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Georgia,"Apple Myungjo","Noto Serif KR",serif;
+  --ease:cubic-bezier(.22,1,.36,1);--dur:.25s}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:var(--fs-body);line-height:1.5}
+.sx{padding:clamp(16px,3vw,32px);display:grid;gap:var(--gap-lg);max-width:76rem;margin-inline:auto;word-break:keep-all;overflow-wrap:anywhere;min-width:0}
+.sx[hidden],.sx-err[hidden]{display:none}
+.sx-head{display:grid;gap:6px;min-width:0}
+.sx-title{font-family:var(--serif);font-weight:400;font-size:var(--fs-title);margin:0;text-wrap:balance}
+.sx-meta{color:var(--muted);font-size:var(--fs-cap);margin:0}
+.sx-meta:empty{display:none}
+.sx-banners{display:grid;gap:8px;margin:4px 0}
+.sx-banners:empty{display:none}
+.sx-banner{margin:0;padding:10px 14px;border-radius:calc(var(--r) - 2px);border:1px solid var(--bad);border-left-width:5px;background:color-mix(in srgb,var(--bad) 8%,var(--panel));line-height:1.6}
+.sx-verdict{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-top:6px}
+.sx-badge{display:inline-flex;align-items:center;gap:8px;font-weight:600;padding:6px 14px;border-radius:999px;color:#fff;transition:background var(--dur)}
+.sx-badge::before{content:"";width:8px;height:8px;border-radius:50%;background:#fff}
+.sx-badge[data-tone="bad"]{background:var(--bad)}
+.sx-badge[data-tone="warn"]{background:var(--warn)}
+.sx-badge[data-tone="ok"]{background:var(--ok)}
+.sx-say{line-height:1.6;margin:0;max-width:62ch;min-width:0}
+
+.sx-main{display:grid;gap:var(--gap-lg);grid-template-columns:minmax(0,1fr);align-items:start}
+@media (min-width:880px){.sx-main{grid-template-columns:minmax(17rem,21rem) minmax(0,1fr)}.sx-side{position:sticky;top:12px}}
+.sx-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:var(--pad-lg);display:grid;gap:var(--gap-md);min-width:0;position:relative}
+.sx-h{font-size:var(--fs-h);font-weight:600;margin:0}
+.sx-note{font-size:var(--fs-cap);color:var(--muted);margin:0;line-height:1.55}
+
+.sx-prods{display:grid;gap:10px}
+.sx-prod{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 12px;border-radius:calc(var(--r) - 2px);border:1px solid var(--line);transition:border-color var(--dur)}
+.sx-prod.changed{border-color:var(--fg)}
+.sx-cap{width:30px;height:15px;border-radius:8px;position:relative;overflow:hidden;flex:none}
+.sx-cap::after{content:"";position:absolute;inset:0 0 0 50%;background:var(--panel);opacity:.55}
+.sx-pname{font-weight:600;line-height:1.3}
+.sx-pkind{font-size:var(--fs-cap);color:var(--muted)}
+.sx-pwarn{font-size:var(--fs-cap);color:var(--bad)}
+.sx-plock{font-size:var(--fs-cap);color:var(--muted)}
+.sx-step{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.sx-step button{font:inherit;width:34px;height:34px;border:0;background:transparent;color:var(--fg);font-size:18px;line-height:1;cursor:pointer}
+.sx-step button:hover:not(:disabled){background:var(--line)}
+.sx-step button:active:not(:disabled){transform:scale(.96)}
+.sx-step button:disabled{color:var(--muted);opacity:.4;cursor:default}
+.sx-step button:focus-visible{outline:2px solid var(--fg);outline-offset:-2px}
+.sx-count{min-width:3.2em;text-align:center;font-variant-numeric:tabular-nums}
+.sx-count b{font-family:var(--serif);font-weight:400;font-size:1.25rem}
+.sx-presets{display:flex;flex-wrap:wrap;gap:8px}
+.sx-preset{font:inherit;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--fg);cursor:pointer}
+.sx-preset[hidden]{display:none}
+.sx-preset[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.sx-preset:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.sx-plan{font-size:var(--fs-cap);color:var(--muted);margin:0}
+.sx-plan:empty{display:none}
+
+.sx-score{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap-sm)}
+@media (min-width:1180px){.sx-score{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.sx-tile{display:grid;gap:2px;padding:12px 14px;border-radius:calc(var(--r) - 2px);background:var(--bg);border:1px solid var(--line);align-content:start;min-width:0}
+.sx-tile .l{font-size:var(--fs-cap);color:var(--muted)}
+.sx-tile .v{font-family:var(--serif);font-size:2rem;line-height:1.1;font-variant-numeric:tabular-nums;transition:color var(--dur)}
+.sx-tile .v small{font-family:var(--sans);font-size:.85rem;color:var(--muted);margin-left:2px}
+.sx-tile .s{font-size:var(--fs-cap);color:var(--muted);min-height:1.2em}
+.sx-tile[data-tone="bad"] .v{color:var(--bad)}
+.sx-tile[data-tone="warn"] .v{color:var(--warn)}
+.sx-tile[data-tone="ok"] .v{color:var(--ok)}
+
+.sx-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:var(--fs-cap);color:var(--muted)}
+.sx-legend span{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.sx-sw{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.sx-rows{display:grid;gap:4px}
+.sx-axis,.sx-row{display:grid;grid-template-columns:minmax(4.6rem,6.5rem) minmax(0,1fr) 4.4rem 6.4rem;align-items:center;gap:10px}
+.sx-axis{font-size:11px;color:var(--muted)}
+.sx-axis .t{position:relative;height:14px}
+.sx-axis .t span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.sx-row{padding:5px 0;border-radius:6px;cursor:default}
+.sx-row:hover,.sx-row:focus-visible{background:var(--bg);outline:none}
+.sx-row:focus-visible{box-shadow:0 0 0 2px var(--fg)}
+.sx-name{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sx-track{position:relative;height:16px;border-radius:5px}
+.sx-fill{position:absolute;left:0;top:2px;bottom:2px;display:flex;border-radius:4px;overflow:hidden;transition:width .55s var(--ease)}
+.sx-seg{height:100%;flex:none;transition:width .55s var(--ease)}
+.sx-fill.capped{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
+.sx-ref{position:absolute;top:-3px;bottom:-3px;left:50%;width:2px;background:var(--fg);opacity:.75;border-radius:1px}
+.sx-ul{position:absolute;top:-5px;bottom:-5px;width:3px;background:var(--bad);border-radius:2px}
+.sx-pct{font-variant-numeric:tabular-nums;text-align:right;font-weight:600;white-space:nowrap;transition:color var(--dur)}
+.sx-pct::after{content:"%";font-weight:400;color:var(--muted);margin-left:1px}
+.sx-chip{justify-self:start;font-size:var(--fs-cap);padding:2px 9px;border-radius:999px;white-space:nowrap;border:1px solid currentColor}
+.sx-chip:empty{display:none}
+.sx-chip.pop{animation:sxPop .6s var(--ease)}
+@keyframes sxPop{0%{transform:scale(1)}35%{transform:scale(1.18)}100%{transform:scale(1)}}
+[data-t="bad"]{color:var(--bad)}
+[data-t="warn"]{color:var(--warn)}
+[data-t="ok"]{color:var(--ok)}
+[data-t="neutral"]{color:var(--muted)}
+@media (max-width:520px){
+  .sx-axis,.sx-row{grid-template-columns:4.4rem minmax(0,1fr) 4rem;gap:8px}
+  .sx-chip,.sx-axis .c{display:none}
+}
+.sx-tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 6px 20px rgba(31,29,26,.14);padding:8px 12px;font-size:var(--fs-cap);max-width:min(18rem,calc(100% - 16px));z-index:3;line-height:1.55}
+.sx-tip[hidden]{display:none}
+.sx-tip .k{color:var(--muted)}
+.sx-tip .p{display:flex;align-items:center;gap:6px}
+
+.sx-disc1{font-size:var(--fs-cap);color:var(--muted);margin:0}
+details.sx-more{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+details.sx-more>summary{cursor:pointer;padding:var(--pad-md) var(--pad-lg);font-size:var(--fs-h);font-weight:600;list-style-position:inside}
+details.sx-more>summary:focus-visible{outline:2px solid var(--fg);outline-offset:2px;border-radius:var(--r)}
+.sx-more-body{display:grid;gap:var(--gap-lg);padding:0 var(--pad-lg) var(--pad-lg);min-width:0}
+.sx-more-body section{min-width:0}
+.sx-scroll{overflow-x:auto}
+table.sx-t{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;overflow-wrap:normal;word-break:normal}
+.sx-t th{font-weight:600;font-size:var(--fs-cap);color:var(--muted);text-align:center;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.sx-t td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
+.sx-t td.num{text-align:right;white-space:nowrap}
+.sx-t .sx-chip{margin-left:6px}
+.sx-list{margin:0;padding-left:1.1em;font-size:var(--fs-cap);color:var(--muted);line-height:1.65}
+.sx-src{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--fs-cap);color:var(--muted)}
+a{color:var(--muted)}
+a:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.sx-disc{font-size:var(--fs-cap);color:var(--muted);line-height:1.65}
+.sx-disc p{margin:0 0 4px}
+.sx-disc ul{margin:4px 0;padding-left:1.1em}
+.sx-disc blockquote{margin:6px 0;padding-left:10px;border-left:3px solid var(--line)}
+.sx-disc .sx-h{margin:0 0 6px}
+
+.sx-err{max-width:40rem;margin:clamp(16px,6vw,64px) auto;padding:0 clamp(16px,3vw,32px);word-break:keep-all;overflow-wrap:anywhere}
+.sx-err .sx-card{border-left:5px solid var(--bad);gap:8px}
+.sx-err p{margin:0}
+.sx-err .d{font-size:var(--fs-cap);color:var(--muted);font-family:ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-reduced-motion:reduce){.sx-fill,.sx-seg,.sx-badge,.sx-pct,.sx-tile .v,.sx-prod{transition:none}.sx-chip.pop{animation:none}.sx-step button:active:not(:disabled){transform:none}}
+</style>
+</head>
+<body>
+<noscript><p style="padding:16px">JavaScript is required to show this dashboard.</p></noscript>
+
+<main class="sx" id="app" hidden>
+  <header class="sx-head">
+    <h1 class="sx-title" id="title"></h1>
+    <div class="sx-banners" id="banners" aria-live="polite"></div>
+    <p class="sx-meta" id="meta"></p>
+    <p class="sx-meta" id="meta2"></p>
+    <div class="sx-verdict">
+      <span class="sx-badge" id="badge" data-tone="warn"></span>
+      <p class="sx-say" id="say"></p>
+    </div>
+  </header>
+
+  <div class="sx-main">
+    <aside class="sx-side sx-card" id="controls">
+      <h2 class="sx-h" data-k="ctrlTitle"></h2>
+      <p class="sx-note" data-k="ctrlNote"></p>
+      <div class="sx-prods" id="prods"></div>
+      <div class="sx-presets" role="group" id="presets">
+        <button type="button" class="sx-preset" id="pre-now" aria-pressed="true"></button>
+        <button type="button" class="sx-preset" id="pre-plan" aria-pressed="false"></button>
+      </div>
+      <p class="sx-plan" id="plan-text"></p>
+    </aside>
+
+    <section class="sx-card" id="board">
+      <div class="sx-score" id="score">
+        <div class="sx-tile" id="t-ul"><span class="l" data-k="tileUl"></span><span class="v"><span class="n">-</span><small>%</small></span><span class="s"></span></div>
+        <div class="sx-tile" id="t-low"><span class="l" data-k="tileLow"></span><span class="v"><span class="n">-</span><small data-k="unitKinds"></small></span><span class="s"></span></div>
+        <div class="sx-tile" id="t-over"><span class="l" data-k="tileOver"></span><span class="v"><span class="n">-</span><small data-k="unitKinds"></small></span><span class="s"></span></div>
+        <div class="sx-tile" id="t-pills"><span class="l" data-k="tilePills"></span><span class="v"><span class="n">-</span><small data-k="unitPills"></small></span><span class="s"></span></div>
+      </div>
+      <div>
+        <h2 class="sx-h" data-k="chartTitle"></h2>
+        <p class="sx-note" id="chart-note"></p>
+      </div>
+      <div class="sx-legend" id="legend"></div>
+      <div class="sx-rows" id="rows" role="list"></div>
+    </section>
+  </div>
+
+  <p class="sx-disc1" data-k="disc1"></p>
+
+  <details class="sx-more" id="more">
+    <summary data-k="more"></summary>
+    <div class="sx-more-body">
+      <section id="func-sec">
+        <h3 class="sx-h" data-k="funcTitle"></h3>
+        <p class="sx-note" data-k="funcNote"></p>
+        <div class="sx-scroll">
+          <table class="sx-t" id="func">
+            <thead><tr id="func-head"></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+      <section id="cautions-sec">
+        <h3 class="sx-h" data-k="cautionsTitle"></h3>
+        <ul class="sx-list" id="cautions"></ul>
+      </section>
+      <section>
+        <h3 class="sx-h" data-k="sourcesTitle"></h3>
+        <div class="sx-src" id="sources"></div>
+      </section>
+      <section class="sx-disc" id="disclaimer"></section>
+    </div>
+  </details>
+</main>
+
+<div class="sx-err" id="err" role="alert" hidden>
+  <div class="sx-card">
+    <h1 class="sx-h" id="err-title"></h1>
+    <div id="err-body"></div>
+  </div>
+</div>
+
+<script id="vitamin-data" type="application/json">__VITAMIN_DATA__</script>
+<script>
+(function () {
+  'use strict';
+  const CAP = 200;
+  const PCOL = ['#2f6fd6', '#d9822b', '#2a9d6f', '#8e55c9', '#c2412d', '#1f9fb5', '#b0a020', '#d6479a', '#5b6b7a', '#7a4a2a'];
+  const TONES = ['bad', 'warn', 'ok', 'neutral'];
+  const PH = '__VITAMIN' + '_DATA__';
+  const reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  const STR = {
+    ko: {
+      ctrlTitle: '하루에 몇 알?', ctrlNote: '개수를 바꾸면 성분 막대가 바로 움직입니다.',
+      presetsAria: '미리 정한 조합', presetNow: '지금 먹는 대로', presetPlan: '권고안 적용', planPrefix: '권고안: ',
+      labelDose: (n, u) => '라벨 하루 ' + n + u, labelUnknown: '라벨 용량 미확인', overLabel: '라벨 용량보다 많아요',
+      drugLock: '의약품은 복용량 조정 안내를 하지 않습니다',
+      minus: (n) => n + ' 하나 줄이기', plus: (n) => n + ' 하나 늘리기',
+      tileUl: '상한에 가장 가까운 성분', tileLow: '부족 판정 성분', tileOver: '상한을 넘은 성분', tilePills: '하루 먹는 개수',
+      unitKinds: '종', unitPills: '개', noUl: '상한이 있는 성분 없음',
+      chartTitle: '성분별 충족도',
+      chartNote: (c) => '막대 길이는 권장량 대비 %, 막대 색은 그 성분이 어느 제품에서 왔는지입니다. 검은 세로선이 권장량(100%), 빨간 눈금이 상한입니다. ' + c + '%를 넘으면 끝을 흐리게 자릅니다.',
+      axisRda: '권장량 100%',
+      disc1: '참고용 분석이며 의학적 조언이 아닙니다. 면책 조항 전문은 아래 "자세히 보기"에 있습니다.',
+      more: '자세히 보기 · 기능성 성분, 읽을 때 주의할 점, 근거, 면책 조항',
+      funcTitle: '권장량이 없는 기능성 성분', funcNote: '공식 권장량이 없어 참고 범위와 나란히 봅니다. 위에서 고른 개수 기준입니다.',
+      funcHead: ['성분', '하루 양', '단위', '참고 범위', '상한', '근거'],
+      cautionsTitle: '이 결과를 읽을 때', sourcesTitle: '근거 링크', noSource: '근거 링크 미확인', srcWord: '출처',
+      badge: { bad: '조정이 필요해요', warn: '살펴볼 곳이 있어요', ok: '균형이 좋아요' },
+      mode: { full_analysis: '전체 분석', quick_check: '빠른 확인', quick_replace: '빠른 교체' }, generated: '생성 ',
+      sayOver: (names, iga, low) => names + iga + ' 상한을 넘습니다. 부족 판정 성분은 ' + low + '종입니다.',
+      sayLow: (low, names) => '상한을 넘는 성분은 없지만 부족 판정 성분이 ' + low + '종입니다 (' + names + ').',
+      sayWarn: (names) => '상한을 넘는 성분은 없지만 살펴볼 성분이 있습니다 (' + names + ').',
+      sayOk: '상한을 넘는 성분이 없고, 부족 판정 성분도 없습니다.',
+      sayLabel: ' 라벨 용량보다 많이 먹는 제품이 있습니다.',
+      more_n: (n) => ' 외 ' + n + '종', sep: '·',
+      tipDaily: (t, r, u, p) => '하루 ' + t + ' ' + u + ' / 권장량 ' + r + ' ' + u + ' (' + p + '%)',
+      tipUl: (ul, u, pu, b) => '상한 ' + ul + ' ' + u + ' 대비 ' + pu + '%' + (b ? ' (' + b + ')' : ''),
+      tipNoUl: '상한 미설정', tipBasis: (b) => '권장량 기준: ' + b,
+      errTitle: '대시보드를 열 수 없어요',
+      err: {
+        placeholder: '데이터가 끼워지지 않은 템플릿 파일입니다. 스킬이 분석 데이터를 넣어 저장한 대시보드 파일을 여세요.',
+        parse: '데이터를 읽지 못했습니다 (JSON 형식 오류).',
+        schema: '지원하지 않는 데이터 버전입니다 (schema_version 1만 지원).',
+        field: '필수 항목이 없거나 형식이 틀립니다.',
+        render: '화면을 그리는 중 오류가 났습니다.'
+      },
+      errHint: '마크다운 리포트에는 영향이 없습니다. 대시보드를 다시 만들어 보세요.'
+    },
+    en: {
+      ctrlTitle: 'How many per day?', ctrlNote: 'Change a count and the nutrient bars move right away.',
+      presetsAria: 'Preset combinations', presetNow: 'As I take now', presetPlan: 'Apply suggestion', planPrefix: 'Suggested plan: ',
+      labelDose: (n, u) => 'Label: ' + n + ' ' + u + '/day', labelUnknown: 'Label dose unknown', overLabel: 'Above the label dose',
+      drugLock: 'No dose-adjustment guidance is given for medications',
+      minus: (n) => 'Take one less of ' + n, plus: (n) => 'Take one more of ' + n,
+      tileUl: 'Closest to its upper limit', tileLow: 'Flagged as low', tileOver: 'Over the upper limit', tilePills: 'Items per day',
+      unitKinds: '', unitPills: '', noUl: 'No nutrient has an upper limit',
+      chartTitle: 'Coverage by nutrient',
+      chartNote: (c) => 'Bar length is % of the recommended amount; bar color shows which product it comes from. The black line is the recommended amount (100%), the red tick is the upper limit. Bars beyond ' + c + '% fade out at the end.',
+      axisRda: 'Recommended 100%',
+      disc1: 'For reference only; not medical advice. The full disclaimer is under "Details" below.',
+      more: 'Details: functional ingredients, reading notes, sources, disclaimer',
+      funcTitle: 'Functional ingredients without a recommended amount', funcNote: 'No official recommended amount exists, so they are shown next to a reference range. Based on the counts chosen above.',
+      funcHead: ['Ingredient', 'Per day', 'Unit', 'Reference range', 'Upper limit', 'Source'],
+      cautionsTitle: 'When reading this result', sourcesTitle: 'Source links', noSource: 'Source link not verified', srcWord: 'source',
+      badge: { bad: 'Needs adjustment', warn: 'Worth a look', ok: 'Well balanced' },
+      mode: { full_analysis: 'Full analysis', quick_check: 'Quick check', quick_replace: 'Quick replace' }, generated: 'Generated ',
+      sayOver: (names, iga, low) => names + ' exceed(s) the upper limit. ' + low + ' nutrient(s) are flagged as low.',
+      sayLow: (low, names) => 'Nothing is over the upper limit, but ' + low + ' nutrient(s) are flagged as low (' + names + ').',
+      sayWarn: (names) => 'Nothing is over the upper limit, but some nutrients need a look (' + names + ').',
+      sayOk: 'Nothing is over the upper limit and nothing is flagged as low.',
+      sayLabel: ' Some products are above their label dose.',
+      more_n: (n) => ' and ' + n + ' more', sep: ', ',
+      tipDaily: (t, r, u, p) => t + ' ' + u + '/day vs recommended ' + r + ' ' + u + ' (' + p + '%)',
+      tipUl: (ul, u, pu, b) => pu + '% of the ' + ul + ' ' + u + ' upper limit' + (b ? ' (' + b + ')' : ''),
+      tipNoUl: 'No upper limit set', tipBasis: (b) => 'Recommended amount basis: ' + b,
+      errTitle: 'The dashboard cannot be opened',
+      err: {
+        placeholder: 'This is the empty template, with no data inserted. Open the dashboard file the skill saved after inserting the analysis data.',
+        parse: 'The data could not be read (invalid JSON).',
+        schema: 'Unsupported data version (only schema_version 1 is supported).',
+        field: 'A required field is missing or has the wrong format.',
+        render: 'An error occurred while drawing the page.'
+      },
+      errHint: 'The markdown report is not affected. Try generating the dashboard again.'
+    }
+  };
+
+  class DataError extends Error {
+    constructor(code, detail) { super(code); this.code = code; this.detail = detail || ''; }
+  }
+  const fail = (code, detail) => { throw new DataError(code, detail); };
+
+  let S = STR.ko, M = null, curLang = null;
+  let nf = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 });
+  const fmt = (v) => nf.format(Math.round(Number(v) * 100) / 100);
+  /* 경계 표시용: 판정과 같은 반올림 전 값을 소수 1자리로 내림 (49.96이 '50.0'으로 보여 판정과 어긋나는 것을 막는다) */
+  let nf1 = new Intl.NumberFormat('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const fmt1 = (v) => nf1.format(Math.floor(Number(v) * 10) / 10);
+  const $ = (id) => document.getElementById(id);
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined && text !== null) e.textContent = text;
+    return e;
+  }
+
+  /* ---------- 데이터 검증 ---------- */
+  const isStr = (v) => typeof v === 'string';
+  function obj(v, path) { if (v === null || typeof v !== 'object' || Array.isArray(v)) fail('field', path); return v; }
+  function arr(v, path, nonEmpty) { if (!Array.isArray(v) || (nonEmpty && !v.length)) fail('field', path); return v; }
+  function str(o, k, path) { if (!isStr(o[k])) fail('field', path + '.' + k); return o[k]; }
+  function nstr(o, k, path) { const v = str(o, k, path); if (v.trim() === '') fail('field', path + '.' + k); return v; }
+  function ostr(o, k, path) { const v = o[k]; if (v === undefined || v === null) return null; if (!isStr(v)) fail('field', path + '.' + k); return v; }
+  function num(o, k, path) {
+    const v = o[k];
+    if (v === null || v === undefined || typeof v === 'boolean' || (isStr(v) && v.trim() === '')) fail('field', path + '.' + k);
+    const n = Number(v);
+    if (!Number.isFinite(n)) fail('field', path + '.' + k);
+    return n;
+  }
+  function onum(o, k, path) { const v = o[k]; return (v === undefined || v === null) ? null : num(o, k, path); }
+  function safeUrl(u) {
+    if (!isStr(u)) return null;
+    try { const x = new URL(u); return x.protocol === 'https:' ? x.href : null; } catch (e) { return null; }
+  }
+
+  function readRules(list) {
+    return arr(list, 'status_rules', true).map((r, i) => {
+      const p = 'status_rules[' + i + ']';
+      obj(r, p);
+      const tone = str(r, 'tone', p);
+      if (TONES.indexOf(tone) < 0) fail('field', p + '.tone');
+      const out = { key: str(r, 'key', p), label: str(r, 'label', p), tone, metric: null, low: r.low === true, onlyNoUl: r.only_if_no_ul === true };
+      if (r.metric !== undefined && r.metric !== null) {
+        if (r.metric !== 'ul_pct' && r.metric !== 'rda_pct') fail('field', p + '.metric');
+        out.metric = r.metric;
+      }
+      ['min', 'below', 'above'].forEach((k) => {
+        const v = onum(r, k, p);
+        if (v !== null) { if (!out.metric) fail('field', p + '.metric'); out[k] = v; }
+      });
+      return out;
+    });
+  }
+
+  function readProducts(list) {
+    const seen = new Set();
+    return arr(list, 'products', true).map((p, i) => {
+      const path = 'products[' + i + ']';
+      obj(p, path);
+      const id = str(p, 'id', path);
+      if (seen.has(id)) fail('field', path + '.id');
+      seen.add(id);
+      const category = str(p, 'category', path);
+      if (['health_food', 'otc_drug', 'rx_drug'].indexOf(category) < 0) fail('field', path + '.category');
+      const out = {
+        id, name: str(p, 'name', path), kind: ostr(p, 'kind', path) || '', category,
+        unit: str(p, 'unit', path), label: onum(p, 'label_dose', path), now: num(p, 'now_dose', path), plan: onum(p, 'plan_dose', path),
+        color: PCOL[i % PCOL.length], drug: category !== 'health_food'
+      };
+      if (out.now < 0 || (out.label !== null && out.label < 0)) fail('field', path + '.dose');
+      out.max = out.drug ? out.now : (out.label !== null ? Math.max(out.label, out.now) : out.now);
+      if (out.drug) out.plan = null;
+      if (out.plan !== null && (out.plan < 0 || out.plan > out.max)) fail('field', path + '.plan_dose');
+      return out;
+    });
+  }
+
+  function readNutrients(list) {
+    const seen = new Set();
+    return arr(list, 'nutrients', true).map((n, i) => {
+      const path = 'nutrients[' + i + ']';
+      obj(n, path);
+      const id = str(n, 'id', path);
+      if (seen.has(id)) fail('field', path + '.id');
+      seen.add(id);
+      const out = {
+        id, name: str(n, 'name', path), unit: str(n, 'unit', path),
+        rda: onum(n, 'rda', path), ul: onum(n, 'ul', path),
+        rdaBasis: ostr(n, 'rda_basis', path), ulBasis: ostr(n, 'ul_basis', path), refRange: ostr(n, 'ref_range', path),
+        url: safeUrl(n.source_url), sourceLabel: ostr(n, 'source_label', path)
+      };
+      if ((out.rda !== null && out.rda <= 0) || (out.ul !== null && out.ul <= 0)) fail('field', path + '.rda/ul');
+      return out;
+    });
+  }
+
+  function parseModel(raw) {
+    if (raw.trim() === PH) fail('placeholder');
+    let d;
+    try { d = JSON.parse(raw); } catch (e) { fail('parse'); }
+    obj(d, 'root');
+    if (d.schema_version !== 1) fail('schema', String(d.schema_version));
+    if (d.lang !== 'ko' && d.lang !== 'en') fail('field', 'lang');
+    curLang = d.lang;
+    const m = {
+      lang: d.lang, mode: str(d, 'mode', 'root'), title: str(d, 'title', 'root'), meta: str(d, 'meta_line', 'root'),
+      generated: ostr(d, 'generated_at', 'root'), ulBanner: nstr(d, 'ul_banner_text', 'root'),
+      planSummary: ostr(d, 'plan_summary', 'root'), disclaimer: nstr(d, 'disclaimer_md', 'root')
+    };
+    m.banners = arr(d.banners, 'banners').map((b, i) => str(obj(b, 'banners[' + i + ']'), 'text', 'banners[' + i + ']'));
+    m.rules = readRules(d.status_rules);
+    m.products = readProducts(d.products);
+    m.nutrients = readNutrients(d.nutrients);
+    const pid = new Set(m.products.map((p) => p.id)), nid = new Set(m.nutrients.map((n) => n.id));
+    m.perUnit = arr(d.per_unit, 'per_unit').map((u, i) => {
+      const path = 'per_unit[' + i + ']';
+      obj(u, path);
+      const out = { product: str(u, 'product', path), nutrient: str(u, 'nutrient', path), amount: num(u, 'amount', path) };
+      if (!pid.has(out.product) || !nid.has(out.nutrient) || out.amount < 0) fail('field', path);
+      return out;
+    });
+    m.cautions = arr(d.cautions, 'cautions').map((c, i) => {
+      const path = 'cautions[' + i + ']';
+      obj(c, path);
+      return { text: str(c, 'text', path), url: safeUrl(c.source_url) };
+    });
+    return m;
+  }
+
+  /* ---------- 판정: 전부 status_rules에서 ---------- */
+  function ruleMatches(r, pr, pu, hasUl) {
+    if (!r.metric) return true;
+    if (r.onlyNoUl && hasUl) return false;
+    const v = r.metric === 'ul_pct' ? pu : pr;
+    if (v === null) return false;
+    if (r.min !== undefined && !(v >= r.min)) return false;
+    if (r.below !== undefined && !(v < r.below)) return false;
+    if (r.above !== undefined && !(v > r.above)) return false;
+    return true;
+  }
+  function pickRule(pr, pu, hasUl) {
+    for (let i = 0; i < M.rules.length; i++) if (ruleMatches(M.rules[i], pr, pu, hasUl)) return M.rules[i];
+    return null;
+  }
+  const toneOf = (r) => (r ? r.tone : 'neutral');
+
+  function bandBackground(n) {
+    const col = { bad: 'color-mix(in srgb,var(--bad) 14%,transparent)', warn: 'color-mix(in srgb,var(--warn) 11%,transparent)', ok: 'color-mix(in srgb,var(--ok) 10%,transparent)' };
+    const runs = [];
+    for (let x = 0; x < CAP; x += 0.5) {
+      const pu = n.ul === null ? null : (x / 100 * n.rda) / n.ul * 100;
+      const t = toneOf(pickRule(x, pu, n.ul !== null));
+      if (runs.length && runs[runs.length - 1].t === t) runs[runs.length - 1].e = x + 0.5;
+      else runs.push({ t, s: x, e: x + 0.5 });
+    }
+    const stops = runs.map((r) => (col[r.t] || 'transparent') + ' ' + (r.s / CAP * 100) + '% ' + (r.e / CAP * 100) + '%');
+    return 'linear-gradient(90deg,' + stops.join(',') + ')';
+  }
+
+  /* ---------- 계산 ---------- */
+  const doses = Object.create(null), last = Object.create(null), rowEls = Object.create(null), prodEls = Object.create(null);
+  function compute() {
+    const tot = Object.create(null), by = Object.create(null);
+    M.perUnit.forEach((u) => {
+      const v = u.amount * doses[u.product];
+      tot[u.nutrient] = (tot[u.nutrient] || 0) + v;
+      (by[u.nutrient] = by[u.nutrient] || []).push({ product: u.product, v });
+    });
+    return M.nutrients.map((n) => {
+      const t = Math.round((tot[n.id] || 0) * 1000) / 1000;
+      /* 판정은 반올림 전 값으로 (analyze-ingredient §5-3·§5A-3과 같은 경계). 반올림 값은 표시에만 */
+      const prRaw = n.rda === null ? null : t / n.rda * 100;
+      const puRaw = n.ul === null ? null : t / n.ul * 100;
+      const pr = prRaw === null ? null : Math.round(prRaw);
+      const pu = puRaw === null ? null : Math.round(puRaw * 10) / 10;
+      return { n, total: t, pr, pu, prRaw, puRaw, rule: pickRule(prRaw, puRaw, n.ul !== null), parts: by[n.id] || [] };
+    });
+  }
+
+  function countTo(e, to) {
+    const from = Number(e.dataset.v || 0);
+    e.dataset.v = to;
+    if (reduce || from === to || document.hidden) { e.textContent = fmt(to); return; }
+    const t0 = performance.now(), dur = 450, mine = String(to);
+    setTimeout(() => { if (e.dataset.v === mine) e.textContent = fmt(to); }, dur + 120);
+    const step = (t) => {
+      if (e.dataset.v !== mine) return;
+      const k = Math.min(1, (t - t0) / dur), ease = 1 - Math.pow(1 - k, 3);
+      e.textContent = fmt(Math.round((from + (to - from) * ease) * 10) / 10);
+      if (k < 1) requestAnimationFrame(step); else e.textContent = fmt(to);
+    };
+    requestAnimationFrame(step);
+  }
+
+  /* ---------- 글 처리 ---------- */
+  function iga(w) {
+    const c = w.charCodeAt(w.length - 1) - 0xac00;
+    if (c < 0 || c > 11171) return '(이)가';
+    return c % 28 ? '이' : '가';
+  }
+  function nameList(names, max) {
+    if (names.length <= max) return names.join(S.sep);
+    return names.slice(0, max).join(S.sep) + S.more_n(names.length - max);
+  }
+  function inline(host, text) {
+    const re = /\*\*([^*]+)\*\*/g;
+    let pos = 0, m;
+    while ((m = re.exec(text))) {
+      if (m.index > pos) host.append(document.createTextNode(text.slice(pos, m.index)));
+      host.append(el('strong', '', m[1]));
+      pos = re.lastIndex;
+    }
+    if (pos < text.length) host.append(document.createTextNode(text.slice(pos)));
+  }
+  function renderMd(host, md) {
+    host.replaceChildren();
+    let para = [], quote = [], ul = null;
+    const flush = () => {
+      if (para.length) { const p = el('p'); inline(p, para.join(' ')); host.append(p); para = []; }
+      if (quote.length) { const q = el('blockquote'); inline(q, quote.join(' ')); host.append(q); quote = []; }
+    };
+    md.split(/\r?\n/).forEach((raw) => {
+      const line = raw.trim();
+      let m;
+      if (!line || /^-{3,}$/.test(line)) { flush(); ul = null; return; }
+      if ((m = /^#{1,4}\s+(.*)$/.exec(line))) { flush(); ul = null; host.append(el('h3', 'sx-h', m[1])); return; }
+      if ((m = /^[-*]\s+(.*)$/.exec(line))) {
+        if (para.length || quote.length) flush();
+        if (!ul) { ul = el('ul'); host.append(ul); }
+        const li = el('li'); inline(li, m[1]); ul.append(li); return;
+      }
+      if ((m = /^>\s?(.*)$/.exec(line))) { if (para.length) flush(); ul = null; quote.push(m[1]); return; }
+      if (quote.length) flush();
+      ul = null; para.push(line);
+    });
+    flush();
+  }
+  function link(url, text) {
+    const a = el('a', '', text);
+    a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    return a;
+  }
+
+  /* ---------- 화면 만들기 ---------- */
+  function tip(card) {
+    let t = card.querySelector('.sx-tip');
+    if (!t) { t = el('div', 'sx-tip'); t.setAttribute('role', 'tooltip'); t.hidden = true; card.append(t); }
+    return t;
+  }
+  function placeTip(card, t, ev) {
+    const cr = card.getBoundingClientRect();
+    let x = ev.clientX - cr.left + 14, y = ev.clientY - cr.top + 14;
+    if (x + t.offsetWidth > cr.width - 8) x = Math.max(8, ev.clientX - cr.left - t.offsetWidth - 14);
+    if (y + t.offsetHeight > cr.height - 8) y = Math.max(8, ev.clientY - cr.top - t.offsetHeight - 14);
+    t.style.left = x + 'px'; t.style.top = y + 'px';
+  }
+  function showTip(id, row, ev) {
+    const d = last[id], card = $('board');
+    if (!d) return;
+    const t = tip(card);
+    t.replaceChildren();
+    const add = (txt, cls) => { const e = el('div', cls, txt); t.append(e); return e; };
+    add(d.n.name + (d.rule ? ' · ' + d.rule.label : ''), 'k');
+    add(S.tipDaily(fmt(d.total), fmt(d.n.rda), d.n.unit, fmt1(d.prRaw)));
+    add(d.n.ul !== null ? S.tipUl(fmt(d.n.ul), d.n.unit, fmt1(d.puRaw), d.n.ulBasis) : S.tipNoUl);
+    if (d.n.rdaBasis) add(S.tipBasis(d.n.rdaBasis), 'k');
+    d.parts.filter((x) => x.v > 0).forEach((x) => {
+      const p = M.products.find((q) => q.id === x.product);
+      const e = add('', 'p');
+      const sw = el('i', 'sx-sw'); sw.style.background = p.color;
+      e.append(sw, document.createTextNode(p.name + ' ' + fmt(x.v) + ' ' + d.n.unit));
+    });
+    add(d.n.url ? (d.n.sourceLabel || S.srcWord) : S.noSource, 'k');
+    t.hidden = false;
+    if (ev && ev.clientX !== undefined) placeTip(card, t, ev);
+    else { const rr = row.getBoundingClientRect(), cr = card.getBoundingClientRect(); t.style.left = '16px'; t.style.top = (rr.bottom - cr.top + 4) + 'px'; }
+  }
+
+  function buildProducts() {
+    const box = $('prods');
+    box.replaceChildren();
+    M.products.forEach((p) => {
+      const row = el('div', 'sx-prod');
+      const cap = el('span', 'sx-cap'); cap.style.background = p.color;
+      const mid = el('div'); mid.style.minWidth = '0';
+      const info = [p.kind, p.drug ? '' : (p.label !== null ? S.labelDose(fmt(p.label), p.unit) : S.labelUnknown)].filter((x) => x).join(' · ');
+      mid.append(el('div', 'sx-pname', p.name));
+      if (info) mid.append(el('div', 'sx-pkind', info));
+      const wn = el('div', 'sx-pwarn', S.overLabel); wn.hidden = true;
+      mid.append(wn);
+      if (p.drug) mid.append(el('div', 'sx-plock', S.drugLock));
+      const st = el('div', 'sx-step');
+      const minus = el('button', '', '−'); minus.type = 'button'; minus.setAttribute('aria-label', S.minus(p.name));
+      const cnt = el('span', 'sx-count'); cnt.setAttribute('aria-live', 'polite');
+      const plus = el('button', '', '+'); plus.type = 'button'; plus.setAttribute('aria-label', S.plus(p.name));
+      st.append(minus, cnt, plus);
+      row.append(cap, mid, st); box.append(row);
+      minus.addEventListener('click', () => { doses[p.id] = Math.max(0, doses[p.id] - 1); update(); });
+      plus.addEventListener('click', () => { doses[p.id] = Math.min(p.max, doses[p.id] + 1); update(); });
+      prodEls[p.id] = { row, cnt, minus, plus, wn };
+    });
+    const lg = $('legend'); lg.replaceChildren();
+    M.products.forEach((p) => {
+      const s = el('span'); const w = el('i', 'sx-sw'); w.style.background = p.color;
+      s.append(w, document.createTextNode(p.name)); lg.append(s);
+    });
+  }
+
+  const planTarget = (p) => (p.plan !== null ? p.plan : p.now);
+  function buildPlan() {
+    const changed = M.products.filter((p) => p.plan !== null && p.plan !== p.now);
+    const has = changed.length > 0;
+    $('pre-plan').hidden = !has;
+    $('pre-now').addEventListener('click', () => { M.products.forEach((p) => { doses[p.id] = p.now; }); update(); });
+    $('pre-plan').addEventListener('click', () => { M.products.forEach((p) => { doses[p.id] = planTarget(p); }); update(); });
+    const pt = $('plan-text');
+    if (!has) { pt.textContent = ''; return; }
+    pt.textContent = S.planPrefix + changed.map((p) => p.name + ' ' + fmt(p.now) + '→' + fmt(p.plan) + p.unit).join(', ') + '.' + (M.planSummary ? ' ' + M.planSummary : '');
+  }
+
+  function buildRows() {
+    const box = $('rows');
+    box.replaceChildren();
+    const axis = el('div', 'sx-axis'); axis.setAttribute('aria-hidden', 'true');
+    const at = el('div', 't');
+    [[0, '0%'], [50, S.axisRda], [100, CAP + '%']].forEach(([l, tx]) => {
+      const s = el('span', '', tx); s.style.left = l + '%';
+      if (l === 0) s.style.transform = 'none';
+      if (l === 100) s.style.transform = 'translateX(-100%)';
+      at.append(s);
+    });
+    axis.append(el('div'), at, el('div'), el('div', 'c'));
+    box.append(axis);
+    const order = compute().filter((d) => d.pr !== null).sort((a, b) => a.pr - b.pr);
+    order.forEach((d) => {
+      const n = d.n;
+      const row = el('div', 'sx-row'); row.setAttribute('role', 'listitem'); row.tabIndex = 0;
+      const tr = el('div', 'sx-track'); tr.style.background = bandBackground(n);
+      const fill = el('div', 'sx-fill');
+      const segs = Object.create(null);
+      M.products.forEach((p) => { const sg = el('div', 'sx-seg'); sg.style.background = p.color; sg.style.width = '0%'; fill.append(sg); segs[p.id] = sg; });
+      tr.append(fill, el('div', 'sx-ref'));
+      if (n.ul !== null && n.ul / n.rda * 100 <= CAP) {
+        const u = el('div', 'sx-ul'); u.style.left = 'calc(' + (n.ul / n.rda * 100 / CAP * 100) + '% - 1px)'; tr.append(u);
+      }
+      const pct = el('div', 'sx-pct'), chip = el('span', 'sx-chip');
+      const nm = el('div', 'sx-name', n.name); nm.title = n.name;
+      row.append(nm, tr, pct, chip); box.append(row);
+      rowEls[n.id] = { row, fill, segs, pct, chip };
+      row.addEventListener('mousemove', (ev) => showTip(n.id, row, ev));
+      row.addEventListener('focus', () => showTip(n.id, row, null));
+      row.addEventListener('mouseleave', () => { tip($('board')).hidden = true; });
+      row.addEventListener('blur', () => { tip($('board')).hidden = true; });
+      row.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') tip($('board')).hidden = true; });
+    });
+  }
+
+  function buildStatic() {
+    $('title').textContent = M.title;
+    document.title = M.title;
+    $('meta').textContent = M.meta;
+    $('meta2').textContent = (S.mode[M.mode] || M.mode) + (M.generated ? ' · ' + S.generated + M.generated : '');
+    $('chart-note').textContent = S.chartNote(CAP);
+    $('presets').setAttribute('aria-label', S.presetsAria);
+    $('pre-now').textContent = S.presetNow;
+    $('pre-plan').textContent = S.presetPlan;
+    const fh = $('func-head'); fh.replaceChildren();
+    S.funcHead.forEach((h) => fh.append(el('th', '', h)));
+    const cl = $('cautions'); cl.replaceChildren();
+    M.cautions.forEach((c) => {
+      const li = el('li', '', c.text);
+      if (c.url) { li.append(document.createTextNode(' ')); li.append(link(c.url, '(' + S.srcWord + ')')); }
+      cl.append(li);
+    });
+    $('cautions-sec').hidden = M.cautions.length === 0;
+    renderMd($('disclaimer'), M.disclaimer);
+    const src = $('sources'); src.replaceChildren();
+    const byUrl = new Map(), missing = [];
+    M.nutrients.forEach((n) => {
+      if (!n.url) { missing.push(n.name); return; }
+      if (!byUrl.has(n.url)) byUrl.set(n.url, { label: n.sourceLabel, names: [] });
+      byUrl.get(n.url).names.push(n.name);
+    });
+    byUrl.forEach((v, url) => src.append(link(url, (v.label || new URL(url).hostname) + ' · ' + v.names.join(S.sep))));
+    if (missing.length) src.append(el('span', '', missing.join(S.sep) + ' · ' + S.noSource));
+    $('func-sec').hidden = !M.nutrients.some((n) => n.rda === null);
+    document.querySelectorAll('[data-k]').forEach((e) => { e.textContent = S[e.dataset.k]; });
+  }
+
+  /* ---------- 갱신 ---------- */
+  function setTile(id, val, tone, sub) {
+    const t = $(id); t.dataset.tone = tone || '';
+    const n = t.querySelector('.n'), sm = t.querySelector('small');
+    if (val === null) { n.textContent = '-'; n.dataset.v = ''; if (sm) sm.hidden = true; } else { countTo(n, val); if (sm) sm.hidden = false; }
+    t.querySelector('.s').textContent = sub || '';
+  }
+
+  function updateRows(res) {
+    res.filter((d) => d.pr !== null).forEach((d) => {
+      const e = rowEls[d.n.id];
+      if (!e) return;
+      e.fill.style.width = (Math.min(d.pr, CAP) / CAP * 100) + '%';
+      e.fill.classList.toggle('capped', d.pr > CAP);
+      Object.keys(e.segs).forEach((k) => {
+        const part = d.parts.find((x) => x.product === k);
+        e.segs[k].style.width = (part && d.total > 0 ? part.v / d.total * 100 : 0) + '%';
+      });
+      const tone = toneOf(d.rule), label = d.rule ? d.rule.label : '';
+      countTo(e.pct, d.pr); e.pct.dataset.t = tone;
+      if (e.chip.dataset.k !== (d.rule ? d.rule.key : '')) {
+        const had = e.chip.dataset.k !== undefined;
+        e.chip.dataset.k = d.rule ? d.rule.key : ''; e.chip.textContent = label; e.chip.dataset.t = tone;
+        if (had && !reduce) { e.chip.classList.remove('pop'); void e.chip.offsetWidth; e.chip.classList.add('pop'); }
+      }
+      e.row.setAttribute('aria-label', d.n.name + ' ' + fmt(d.pr) + '%' + (label ? ', ' + label : ''));
+    });
+  }
+
+  function updateSummary(res) {
+    const over = res.filter((d) => toneOf(d.rule) === 'bad');
+    const low = res.filter((d) => d.pr !== null && d.rule && d.rule.low);
+    const look = res.filter((d) => d.rule && (d.rule.tone === 'warn' || d.rule.low));
+    const withUl = res.filter((d) => d.pu !== null);
+    const closest = withUl.reduce((a, d) => (a === null || d.pu > a.pu ? d : a), null);
+    setTile('t-ul', closest ? closest.pu : null, closest ? toneOf(closest.rule) : '', closest ? closest.n.name : S.noUl);
+    setTile('t-low', low.length, low.length ? 'warn' : 'ok');
+    setTile('t-over', over.length, over.length ? 'bad' : 'ok');
+    setTile('t-pills', M.products.reduce((a, p) => a + doses[p.id], 0), '');
+
+    const badge = $('badge'), say = $('say');
+    let tone = 'ok', text = S.sayOk;
+    if (over.length) {
+      tone = 'bad';
+      const names = nameList(over.map((d) => d.n.name), 5);
+      text = S.sayOver(names, iga(names), low.length);
+    } else if (look.length) {
+      tone = 'warn';
+      text = low.length ? S.sayLow(low.length, nameList(low.map((d) => d.n.name), 5)) : S.sayWarn(nameList(look.map((d) => d.n.name), 5));
+    }
+    badge.dataset.tone = tone; badge.textContent = S.badge[tone];
+    if (M.products.some((p) => !p.drug && p.label !== null && doses[p.id] > p.label)) text += S.sayLabel;
+    say.textContent = text;
+    updateBanners(over);
+  }
+
+  function updateBanners(over) {
+    const box = $('banners');
+    let dyn = box.querySelector('[data-dyn]');
+    if (!over.length) { if (dyn) dyn.remove(); return; }
+    if (!dyn) { dyn = el('p', 'sx-banner'); dyn.dataset.dyn = '1'; box.append(dyn); }
+    /* disclaimer.md §3-4 자리 표시: 한국어 [성분명], 영어 [ingredient] */
+    const names = over.map((d) => d.n.name).join(S.sep);
+    dyn.textContent = M.ulBanner.split('[성분명]').join(names).split('[ingredient]').join(names);
+  }
+
+  function updateTable(res) {
+    const tb = document.querySelector('#func tbody');
+    tb.replaceChildren();
+    res.filter((d) => d.n.rda === null).forEach((d) => {
+      const tr = el('tr');
+      const cells = [[d.n.name, ''], [fmt(d.total), 'num'], [d.n.unit, ''], [d.n.refRange || '-', ''], [d.n.ul !== null ? fmt(d.n.ul) : '-', 'num']];
+      cells.forEach(([t, c]) => tr.append(el('td', c, t)));
+      /* 권장량이 없어도 상한 규칙에 걸리면 상한 칸 옆에 판정 라벨 (위 막대 목록에는 이 성분이 없다) */
+      if (d.n.ul !== null && d.rule && (d.rule.tone === 'bad' || d.rule.metric === 'ul_pct')) {
+        const ch = el('span', 'sx-chip', d.rule.label); ch.dataset.t = d.rule.tone;
+        tr.children[4].append(ch);
+      }
+      const td = el('td');
+      if (d.n.url) td.append(link(d.n.url, d.n.sourceLabel || S.srcWord)); else td.textContent = S.noSource;
+      tr.append(td); tb.append(tr);
+    });
+  }
+
+  function update() {
+    const res = compute();
+    res.forEach((d) => { last[d.n.id] = d; });
+    M.products.forEach((p) => {
+      const e = prodEls[p.id], n = doses[p.id];
+      e.cnt.replaceChildren(); e.cnt.append(el('b', '', fmt(n)), document.createTextNode(' ' + p.unit));
+      e.minus.disabled = p.drug || n <= 0; e.plus.disabled = p.drug || n >= p.max;
+      e.row.classList.toggle('changed', n !== p.now);
+      e.wn.hidden = !(!p.drug && p.label !== null && n > p.label);
+    });
+    const same = (f) => M.products.every((p) => doses[p.id] === f(p));
+    $('pre-now').setAttribute('aria-pressed', String(same((p) => p.now)));
+    $('pre-plan').setAttribute('aria-pressed', String(same(planTarget)));
+    updateRows(res); updateSummary(res); updateTable(res);
+  }
+
+  /* ---------- 시작 / 오류 ---------- */
+  function showError(e) {
+    $('app').hidden = true;
+    const known = curLang ? [curLang] : ['ko', 'en'];
+    const body = $('err-body'); body.replaceChildren();
+    const code = e instanceof DataError ? e.code : 'render';
+    known.forEach((lg) => {
+      const T = STR[lg];
+      if (lg === known[0]) $('err-title').textContent = T.errTitle;
+      body.append(el('p', '', T.err[code] || T.err.render));
+    });
+    const detail = e instanceof DataError ? e.detail : String(e && e.message ? e.message : e);
+    if (detail) body.append(el('p', 'd', detail));
+    body.append(el('p', 'sx-note', STR[known[0]].errHint));
+    if (known.length > 1) body.append(el('p', 'sx-note', STR[known[1]].errHint));
+    $('err').hidden = false;
+    document.title = STR[known[0]].errTitle;
+  }
+
+  function init() {
+    try {
+      M = parseModel($('vitamin-data').textContent);
+      S = STR[M.lang];
+      const loc = M.lang === 'ko' ? 'ko-KR' : 'en-US';
+      nf = new Intl.NumberFormat(loc, { maximumFractionDigits: 2 });
+      nf1 = new Intl.NumberFormat(loc, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      document.documentElement.lang = M.lang;
+      M.products.forEach((p) => { doses[p.id] = p.now; });
+      buildStatic();
+      M.banners.forEach((t) => $('banners').append(el('p', 'sx-banner', t)));
+      buildProducts(); buildPlan(); buildRows();
+      $('app').hidden = false;
+      update();
+    } catch (e) {
+      showError(e);
+    }
+  }
+  init();
+})();
+</script>
+</body>
+</html>

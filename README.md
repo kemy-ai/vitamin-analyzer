@@ -51,6 +51,7 @@
 | 근거 투명성 | 모든 주장에 `[출처: Tier N / URL]` 표기 |
 | 면책 자동 | 매 리포트 말미 자동 삽입 (축약·생략 금지) |
 | 이중 언어 | 한국어 기본, `--en` 영어, `--both` 병기 |
+| 대시보드 (선택) | `--dashboard` 또는 "대시보드로 보여줘" 요청 시 오프라인 HTML 대시보드 추가 생성 (제품별 개수 조절, 성분별 충족도 막대). 마크다운 리포트를 대체하지 않음 |
 
 ---
 
@@ -178,6 +179,14 @@ NutriCalm Labs LiverRelax Complex 분석해줘 —
 
 Claude가 WebSearch로 제품 성분 조회 → 저신뢰 시 사용자에게 재확인 요청 → 이후 동일 플로우.
 
+### 3-5. 대시보드로 보기 (선택)
+
+```
+/vitamin 지금 먹는 4개 전체 분석해줘 --dashboard
+```
+
+마크다운 리포트를 저장한 뒤, 같은 폴더(`user-data/reports/{프로필}/`)에 `..._dashboard.html`을 만들어 브라우저로 엽니다. 인터넷 연결 없이 열리고, 제품별 "하루에 몇 알"을 바꿔 보면 성분 막대가 바로 움직입니다 (참고용, 개수 상한은 라벨 하루 용량). 빠른 질문("종합비타민 괜찮아? 대시보드로")에도 쓸 수 있고, 이때는 질문한 제품만 담습니다.
+
 ---
 
 ## 4. 폴더 구조
@@ -194,6 +203,7 @@ vitamin-analyzer/                    # Claude Code 플러그인 루트
 │       ├── SKILL.md                 # 메인 스킬 (Phase 1~6 조율)
 │       ├── references/              # Lookup 데이터 (Claude 내부 참조)
 │       ├── prompts/                 # 단계별 프롬프트
+│       ├── assets/                  # 대시보드 HTML 템플릿
 │       └── examples/                # 테스트 케이스
 ├── README.md                        # 이 파일
 ├── CHANGELOG.md
@@ -225,8 +235,12 @@ skills/vitamin-analyzer/
 │   ├── parse-image.md               # Phase 2 이미지 → JSON
 │   ├── parse-kfda-response.md       # C003 응답 → 구조화 JSON (STDR_STND/RAWMTRL_NM/NTK_MTHD)
 │   ├── analyze-ingredient.md        # Phase 3 정규화·합산·RDA/UL 평가
-│   └── report-template.md           # Phase 5 JSON → 마크다운 리포트
+│   ├── report-template.md           # Phase 5 JSON → 마크다운 리포트
+│   └── render-dashboard.md          # (요청 시) 대시보드 데이터 JSON 형식 + 생성 절차
+├── assets/
+│   └── dashboard-template.html      # 대시보드 템플릿 (오프라인 단일 파일)
 └── examples/                        # 테스트 케이스 (가상 브랜드)
+    ├── dashboard-sample.json        # 대시보드 시험 데이터 (가상 제품·가상 인물)
     ├── liver-relax-sample.md        # 단일 제품 (간 복합제)
     ├── multi-vitamin-sample.md      # 단일 제품 (25성분 종합)
     └── stack-optimize-sample.md     # 3제품 스택 최적화
@@ -310,6 +324,7 @@ MIT License. 단, 본 Skill은 **의학적 조언을 대체하지 않음**. 모�
 
 ## 11. 버전
 
+- **v1.4.0 (2026-10-23)**: `--dashboard` 선택 출력 추가 - 브라우저에서 여는 오프라인 HTML 대시보드 (제품별 개수 조절, 성분별 충족도, 상한 경고)
 - **v1.3.2 (2026-10-23)**: 식약처 함량 해석 판정 절차, 특수문자 제품명 검색, 아연↔철 경고 조건 등 결함 4건 수정
 - **v1.3.1 (2026-10-23)**: SKILL.md의 Phase별 상세를 `references/phase-details.md`로 분리 (동작 변경 없음)
 - **v1.3.0 (2026-04-18)**: Claude Code 플러그인 구조로 전환. `/vitamin` 슬래시 커맨드 + `/plugin install` 지원

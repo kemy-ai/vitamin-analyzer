@@ -4,6 +4,32 @@
 
 ---
 
+## [1.4.0] - 2026-10-23
+
+**대시보드 출력 옵션**: 분석 결과를 브라우저에서 바로 여는 HTML 대시보드로도 볼 수 있다. 요청할 때만 만드는 보조 산출물이며, 마크다운 리포트는 그대로 기본 출력이다.
+
+### Added
+
+- `assets/dashboard-template.html` - 신규. 외부 연결 없이 열리는 단일 HTML 템플릿. 제품별 "하루에 몇 알" 개수 조절, 권고안 적용 버튼, 성분별 충족도 막대(제품별 색으로 쌓음), 상한 초과 시 상단 빨간 배너, 접히는 "자세히 보기"(기능성 성분 표·읽을 때 주의할 점·근거 링크·면책 조항 전문). 한국어·영어 문구
+- `prompts/render-dashboard.md` - 신규. 언제 만드는지, 데이터 JSON 형식(schema_version 1), 생성·저장·띄우기 절차
+- `examples/dashboard-sample.json` - 신규. 가상 제품·가상 인물 시험 데이터
+- 호출: `/vitamin ... --dashboard` 또는 "대시보드로/그래프로 보여줘". 전체 분석과 빠른 질문 모드 모두 지원 (빠른 질문 모드는 직접 요청했을 때만 HTML 하나 저장)
+
+### Safety
+
+- 판정 기준 숫자는 템플릿에 두지 않고 `analyze-ingredient.md` §5-3·§5A-3에서 데이터로 전달 (한 곳에서만 관리)
+- 개수 조절 상한은 라벨 하루 용량. 의약품은 개수 조절을 잠그고 복용량 안내를 하지 않음
+- "참고용 분석이며 의학적 조언이 아닙니다" 한 줄 상시 노출, 면책 조항 전문 포함
+- 모든 데이터는 글자로만 표시(HTML로 해석하지 않음), 링크는 https만, 데이터 안 `<` 이스케이프
+- 영유아·반려동물 거부 시 대시보드를 만들지 않음
+
+### Changed
+
+- `SKILL.md` §3·§5·§11, `references/phase-details.md` Phase 6 (Step 11 추가), `prompts/detect-intent.md` (`wants_dashboard` 필드, 모드와 별개), `prompts/report-template.md` §3-10a, `references/user-data-schema.md`, `commands/vitamin.md` - 대시보드 경로 반영
+- `commands/vitamin.md` - 리포트 저장 경로 표기를 실제 규칙(`reports/{profile-id}/..._analysis.md`)으로 정정
+
+---
+
 ## [1.3.2] - 2026-10-23
 
 **실사용 테스트에서 찾은 결함 수정**: 4개 제품 스택(종합비타민·오메가3·칼슘마그네슘·간 영양제) 전체 분석 테스트에서 나온 결함 4건.

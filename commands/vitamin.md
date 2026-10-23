@@ -1,6 +1,6 @@
 ---
 description: 근거 기반 비타민·보충제·OTC 의약품 스택 분석. NIH/PubMed/식약처 근거로 UL 초과·RDA 미달·상호작용·중복 성분을 평가.
-argument-hint: "[질문 또는 제품명 — 비워두면 프로필 질문부터 시작]"
+argument-hint: "[질문 또는 제품명 — 비워두면 프로필 질문부터 시작] [--dashboard]"
 ---
 
 # /vitamin — 비타민 · 보충제 · 의약품 스택 분석
@@ -21,6 +21,7 @@ argument-hint: "[질문 또는 제품명 — 비워두면 프로필 질문부터
 - 인텐트 라우터: `skills/vitamin-analyzer/prompts/detect-intent.md`
 - 프로필 감지: `skills/vitamin-analyzer/prompts/detect-profile.md`
 - 리포트 템플릿: `skills/vitamin-analyzer/prompts/report-template.md`
+- 대시보드 (요청 시만): `skills/vitamin-analyzer/prompts/render-dashboard.md` + `skills/vitamin-analyzer/assets/dashboard-template.html`
 - 참조 파일들: `skills/vitamin-analyzer/references/` (성분 aliases·RDA 테이블·상호작용·KFDA API 스펙·면책 등)
 
 ### Step 2. 인자 해석
@@ -55,7 +56,9 @@ argument-hint: "[질문 또는 제품명 — 비워두면 프로필 질문부터
 
 ### Step 5. 산출물 저장
 
-Phase 6에서 리포트를 `./user-data/reports/YYYY-MM-DD_HHMM_분석.md`로 자동 저장 + 파싱 원본 JSON은 `./user-data/stacks/{profile-id}_latest.json`에 저장.
+Phase 6에서 리포트를 `./user-data/reports/{profile-id}/YYYY-MM-DD_HHMM_analysis.md`로 자동 저장 + 파싱 원본 JSON은 `./user-data/stacks/{profile-id}_latest.json`에 저장.
+
+`$ARGUMENTS`에 `--dashboard`가 있거나 "대시보드로/그래프로 보여줘" 같은 요청이면 `render-dashboard.md` 절차로 같은 폴더에 `YYYY-MM-DD_HHMM_dashboard.html`을 **추가로** 만들어 브라우저로 연다. 요청이 없으면 만들지 않는다.
 
 ---
 

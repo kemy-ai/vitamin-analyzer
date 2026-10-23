@@ -19,6 +19,7 @@
 └── reports/
     └── {profile-id}/
         ├── YYYY-MM-DD_HHMM_analysis.md
+        ├── YYYY-MM-DD_HHMM_dashboard.html  # 요청 시만 (render-dashboard.md)
         └── latest.md              # 최신 리포트 심볼릭 링크
 ```
 
@@ -275,6 +276,7 @@ ln -sfn "./user-data/reports/default/2026-04-17_1733_analysis.md" \
 | 스택 | `stacks/{profile_id}_latest.json` | `stacks/default_latest.json` |
 | 리포트 | `reports/{profile_id}/{YYYY-MM-DD_HHMM}_analysis.md` | `reports/default/2026-04-17_1733_analysis.md` |
 | 최신 링크 | `reports/{profile_id}/latest.md` | `reports/default/latest.md` |
+| 대시보드 (요청 시만) | `reports/{profile_id}/{YYYY-MM-DD_HHMM}_dashboard.html` | `reports/default/2026-04-17_1733_dashboard.html` |
 
 ---
 

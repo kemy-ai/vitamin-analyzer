@@ -162,6 +162,8 @@ ul_percent = (total_amount / UL) × 100 # UL이 정의된 경우만
 | `rda_percent < 50` | 🟡 | 부족 가능성 (증상 관련 시 추천) |
 | `rda_percent >= 150` AND UL 없음 | 🟡 | 과잉 가능성 (수용성 비타민 등) |
 
+> 이 표와 §5A-3의 숫자는 대시보드 판정 규칙(`prompts/render-dashboard.md` §2 `status_rules`)의 출처다. 숫자를 바꾸면 그 예시도 같은 변경에서 바꾼다.
+
 ### 5-4. UL 없는 성분 처리
 - L-테아닌, 실리마린 등 RDA/UL 미설정 성분은 `rda_percent: null`, `ul_percent: null`, `flag: "no_rda"`
 - 대신 임상 연구에서 사용된 **일반적 투여 범위**를 `reference_dose_range` 필드에 출처 URL과 함께 기록

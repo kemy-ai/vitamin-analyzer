@@ -450,6 +450,7 @@ Phase 6에서 리포트를 사용자에게 노출하기 **전에** `.md` 파일�
 - 파일명 중복 시 `_2`, `_3` 서픽스
 - 저장 실패 시 `{{SAVE_FAILURE_BANNER}}`가 활성화됨 (§3-10b 참조). `{{FILE_SAVED_PATH}}` 자체는 시도했던 경로로 채움
 - PDF는 **생략** (사용자 피드백 반영)
+- 대시보드를 요청받았으면 같은 폴더에 `YYYY-MM-DD_HHMM_dashboard.html`을 추가로 만들고 이 경로 아래 줄에 함께 알린다 (`prompts/render-dashboard.md` §4). 대시보드는 이 마크다운 리포트를 대체하지 않는다
 
 ### 3-10b. `{{SAVE_FAILURE_BANNER}}` — 저장 실패 배너 
 

@@ -33,6 +33,7 @@ ABSOLUTE RULES:
 7. If the user asks about ONE specific ingredient/product interaction/upper-limit → quick_check.
 8. If the user says "떨어졌어", "다 먹었어", "대체할 거", "다른 거 추천" about ONE product → quick_replace.
 9. Never silently escalate. Record your chosen mode AND a one-sentence `suggestion_message` for the user that mentions the next-deeper mode as OPTIONAL.
+10. Dashboard is ORTHOGONAL to mode. Set `wants_dashboard: true` only if the user passes `--dashboard` or explicitly asks for a dashboard/graph/chart view ("대시보드로", "그래프로", "차트로", "시각화해줘", "한눈에 보게"). A dashboard request alone never escalates the mode.
 ```
 
 ---
@@ -59,6 +60,12 @@ ABSOLUTE RULES:
 
 **우선순위**: full_analysis 명시어 > quick_replace > quick_check > default(quick_check)
 
+### 대시보드 요청 (모드와 별개 - `wants_dashboard`)
+- `--dashboard` 플래그
+- `(대시보드|그래프|차트|시각화|한눈에)(로|으로)? (보여|봐|만들)` - 출력 형태 요청
+- 모드를 바꾸지 않는다. "종합비타민 괜찮아? 대시보드로" = `quick_check` + `wants_dashboard: true`
+- 절차 = `prompts/render-dashboard.md`
+
 ---
 
 ## 4. 출력 JSON 스키마
@@ -76,6 +83,7 @@ ABSOLUTE RULES:
   "requires_stack_load": true,
   "suggestion_message": "비타민 D UL만 체크했어요. 스택 전체 밸런스까지 보려면 풀 분석을 권하지만, 지금 답변으로 충분하시면 여기서 마칠게요.",
   "escalation_allowed": true,
+  "wants_dashboard": false,
   "reasoning": "one_ingredient_specific_question_about_ul"
 }
 ```
@@ -93,6 +101,7 @@ ABSOLUTE RULES:
 - `requires_stack_load`: true면 `stacks/{profile_id}_latest.json` 로드 필요
 - `suggestion_message`: SKILL.md가 답변 말미에 추가할 1문장 (사용자에게 다음 단계 **제안만**)
 - `escalation_allowed`: false면 `suggestion_message` 생략 (풀 분석 직후 재호출 등)
+- `wants_dashboard`: true면 해당 모드 답변에 더해 `render-dashboard.md`로 HTML 대시보드를 만든다 (기본 false)
 
 ---
 
@@ -102,20 +111,21 @@ ABSOLUTE RULES:
 1. 대상 성분/제품만 로드 (`stacks/` 해당 항목)
 2. `rda-table.md`에서 UL/RDA 조회 → 1~2개 근거 URL 인용
 3. 답변 구성: **질문 재확인 → 수치 → 결론 (OK/경고) → 근거 URL → suggestion_message**
-4. 리포트 파일 저장 **안 함** (대화 내 응답만)
+4. 리포트 파일 저장 **안 함** (대화 내 응답만). 예외: `wants_dashboard: true`면 질문에 나온 제품만 담은 대시보드 HTML 하나를 저장 (마크다운은 여전히 안 만듦)
 5. 소요 시간 목표: 30초 이내
 
 ### quick_replace
 1. 대상 제품 1개 로드 → 핵심 성분 추출
 2. `references/search-templates.md`로 대체제품 조회 (국내 5 + 해외 3)
 3. 답변 구성: **원 제품 요약 → 대체 후보 비교표 (성분/함량/형태/가격) → 흡수율 우수 우선 강조 → suggestion_message**
-4. 리포트 파일 저장 **선택적** (사용자가 "저장해줘" 하면만)
+4. 리포트 파일 저장 **선택적** (사용자가 "저장해줘" 하면만). `wants_dashboard: true`면 대상 제품만 담은 대시보드 HTML 하나를 저장
 5. 소요 시간 목표: 2~3분
 
 ### full_analysis
 1. 기존 Phase 1~6 전체 실행
 2. `stacks/{profile_id}_latest.json` + 리포트 `.md` + `latest.md` 심볼릭 링크 전부 갱신
-3. `suggestion_message` = null (더 깊은 단계 없음)
+3. `wants_dashboard: true`면 마크다운 저장 뒤 대시보드 HTML 추가 생성 (스택 전체)
+4. `suggestion_message` = null (더 깊은 단계 없음)
 
 ---
 

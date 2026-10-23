@@ -1,8 +1,8 @@
 ---
 name: vitamin-analyzer
-description: Help users audit their supplement stack and answer the quiet question behind every vitamin bottle — "Am I actually covering what I need? Am I doubling up? Is anything over the upper limit?" Guides the user on a journey to optimize their vitamin portfolio with evidence-based analysis. Activates when the user shares a supplement name, ingredient list, or Supplement Facts label photo, optionally with personal context (age, biological sex, symptoms, pregnancy, prescription drugs). Returns a Korean (default) or English markdown report covering RDA gaps, UL overages, duplicate ingredients, drug/supplement interactions, and domestic + overseas (iHerb) alternative product suggestions — every medical claim backed by Tier 1–2 citations from the U.S. National Institutes of Health Office of Dietary Supplements (NIH ODS), PubMed (National Library of Medicine), Cochrane Library systematic reviews, Examine.com, and the Korean Ministry of Food and Drug Safety (식약처) public Open APIs for both domestic health functional foods (C003/I2710) and OTC / prescription drugs (product approval, patient-friendly summaries, pill identification) when KFDA_HTFS_KEY / KFDA_FOODSAFETY_KEY env vars are set. Automatically routes between health-food and drug APIs so OTC multivitamins (e.g. 비맥스, 아로나민, 센트룸) are correctly identified when not registered as health functional foods. Supports multiple user-named profiles (self, family, friends) and three intent modes (quick_check / quick_replace / full_analysis) to match answer depth to question depth. Persists product DB, stack JSON, and reports under ./user-data/. Declines analyses for under-12 and pets; never issues prescription-drug dosing advice.
+description: Help users audit their supplement stack and answer the quiet question behind every vitamin bottle — "Am I actually covering what I need? Am I doubling up? Is anything over the upper limit?" Guides the user on a journey to optimize their vitamin portfolio with evidence-based analysis. Activates when the user shares a supplement name, ingredient list, or Supplement Facts label photo, optionally with personal context (age, biological sex, symptoms, pregnancy, prescription drugs). Returns a Korean (default) or English markdown report covering RDA gaps, UL overages, duplicate ingredients, drug/supplement interactions, and domestic + overseas (iHerb) alternative product suggestions (plus, only when asked with --dashboard or "show it as a dashboard/graph", an offline single-file HTML dashboard with a per-product daily-count simulator) — every medical claim backed by Tier 1–2 citations from the U.S. National Institutes of Health Office of Dietary Supplements (NIH ODS), PubMed (National Library of Medicine), Cochrane Library systematic reviews, Examine.com, and the Korean Ministry of Food and Drug Safety (식약처) public Open APIs for both domestic health functional foods (C003/I2710) and OTC / prescription drugs (product approval, patient-friendly summaries, pill identification) when KFDA_HTFS_KEY / KFDA_FOODSAFETY_KEY env vars are set. Automatically routes between health-food and drug APIs so OTC multivitamins (e.g. 비맥스, 아로나민, 센트룸) are correctly identified when not registered as health functional foods. Supports multiple user-named profiles (self, family, friends) and three intent modes (quick_check / quick_replace / full_analysis) to match answer depth to question depth. Persists product DB, stack JSON, and reports under ./user-data/. Declines analyses for under-12 and pets; never issues prescription-drug dosing advice.
 license: MIT
-version: 1.3.2
+version: 1.4.0
 ---
 
 # Vitamin Analyzer — 보충제 분석 Skill
@@ -160,6 +160,7 @@ Phase 6: 리포트 생성 + 자동 저장 (프로필별 디렉토리)
  └─ user-data/stacks/{profile_id}_latest.json (원본 백업)
  └─ user-data/reports/{profile_id}/YYYY-MM-DD_HHMM_analysis.md
  └─ user-data/reports/{profile_id}/latest.md (symlink)
+ └─ (요청 시만) prompts/render-dashboard.md → ..._dashboard.html (마크다운 저장 뒤)
 ```
 
 **모드별 실행 범위**:
@@ -169,6 +170,8 @@ Phase 6: 리포트 생성 + 자동 저장 (프로필별 디렉토리)
 | quick_check | ✅ 필수 | ✅ | ✅ | 축약 | ✅ | 선택 항목만 | 선택 항목만 | ❌ | 축약 | ❌ |
 | quick_replace | ✅ 필수 | ✅ | ✅ | 1제품만 | ✅ | 해당 성분만 | ❌ | ✅ | 축약 | 선택 |
 | full_analysis | ✅ 필수 | ✅ | ✅ | 전체 | ✅ | 전체 | ✅ | ✅ | 전체 | ✅ |
+
+**대시보드 (선택 출력)**: `--dashboard` 또는 "대시보드로/그래프로 보여줘" 같은 요청이 있을 때만 HTML 대시보드를 **추가로** 만든다. 세 모드 모두 가능하며, quick 모드는 직접 요청했을 때만 HTML 하나를 저장하고 마크다운은 그 모드 규칙대로 둔다. 영유아·반려동물 거부 시에는 만들지 않는다. 절차·데이터 형식 = `prompts/render-dashboard.md`.
 
 ---
 
@@ -183,6 +186,7 @@ Phase 0-A(API 연결 체크)부터 6(리포트)까지의 실행 상세 전문. *
 | 기본 | 한국어 리포트 + §1 면책 |
 | `--en` | 영어 리포트 + §2 면책 |
 | `--both` | 한국어 본문 + 말미 영어 요약 + §1 + §2 모두 |
+| `--dashboard` | 위 리포트에 더해 HTML 대시보드 생성 (`prompts/render-dashboard.md`). 언어 옵션과 함께 쓸 수 있다 |
 
 ---
 
@@ -355,6 +359,8 @@ Claude:
 | `prompts/parse-image.md` | 이미지 판독 JSON 스키마 | 1 |
 | `prompts/analyze-ingredient.md` | 정규화→합산→플래그→근거 7단계 | 2, 3, 4 |
 | `prompts/report-template.md` | 마크다운 리포트 템플릿 | 6 |
+| `prompts/render-dashboard.md` | 대시보드 HTML 생성 절차 + 데이터 JSON 형식 (요청 시만) | 6 |
+| `assets/dashboard-template.html` | 대시보드 템플릿 (데이터 자리 하나, 오프라인 단일 파일) | 6 |
 | `references/deficiency-excess-effects.md` | 28영양소 부족·초과 건강 영향 카탈로그 | 3, 4, 6 |
 | `prompts/detect-profile.md` | 관계 키워드 → profile_id 라우팅 | 0 |
 | `prompts/detect-intent.md` | 3모드 인텐트 분류 | 0.5 |

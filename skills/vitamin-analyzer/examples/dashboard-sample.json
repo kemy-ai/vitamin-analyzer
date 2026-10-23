@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "lang": "ko",
+  "mode": "full_analysis",
+  "title": "영양제 스택 점검 (예시)",
+  "meta_line": "예시 데이터 · 30대 여성 (가상 인물) · 기준: 한국인 영양소 섭취기준 (여 30-49세) · 보충제에서 들어오는 양만 계산 (식사 제외)",
+  "generated_at": "2026-10-23 12:00",
+  "banners": [],
+  "ul_banner_text": "🔴 상한섭취량(UL) 초과 경고 - 분석 결과 [성분명]이(가) 상한섭취량을 초과했습니다. 장기 복용 시 부작용 위험이 있습니다. 제품 감량·교체·중단을 검토하고 담당 의료진과 상담하세요.",
+  "status_rules": [
+    {
+      "key": "over",
+      "label": "상한 초과",
+      "tone": "bad",
+      "metric": "ul_pct",
+      "min": 100
+    },
+    {
+      "key": "near",
+      "label": "상한 근접",
+      "tone": "warn",
+      "metric": "ul_pct",
+      "min": 70
+    },
+    {
+      "key": "lack",
+      "label": "현저 부족",
+      "tone": "warn",
+      "metric": "rda_pct",
+      "below": 50,
+      "low": true
+    },
+    {
+      "key": "short",
+      "label": "경미 부족",
+      "tone": "warn",
+      "metric": "rda_pct",
+      "below": 70,
+      "low": true
+    },
+    {
+      "key": "excess",
+      "label": "과잉 가능성",
+      "tone": "warn",
+      "metric": "rda_pct",
+      "above": 150,
+      "only_if_no_ul": true
+    },
+    {
+      "key": "high",
+      "label": "권장량 이상",
+      "tone": "neutral",
+      "metric": "rda_pct",
+      "above": 150
+    },
+    {
+      "key": "ok",
+      "label": "적정",
+      "tone": "ok"
+    }
+  ],
+  "products": [
+    {
+      "id": "p1",
+      "name": "가상 데일리 멀티",
+      "kind": "종합비타민",
+      "category": "health_food",
+      "unit": "정",
+      "label_dose": 2,
+      "now_dose": 2,
+      "plan_dose": 2,
+      "plan_note": null
+    },
+    {
+      "id": "p2",
+      "name": "가상 칼마디 플러스",
+      "kind": "칼슘·마그네슘·비타민D",
+      "category": "health_food",
+      "unit": "정",
+      "label_dose": 2,
+      "now_dose": 3,
+      "plan_dose": 1,
+      "plan_note": "마그네슘 상한을 넘지 않게 줄임"
+    },
+    {
+      "id": "p3",
+      "name": "가상 오메가 데일리",
+      "kind": "오메가3",
+      "category": "health_food",
+      "unit": "캡슐",
+      "label_dose": 1,
+      "now_dose": 1,
+      "plan_dose": 1,
+      "plan_note": null
+    },
+    {
+      "id": "p4",
+      "name": "가상 비타민B정",
+      "kind": "일반의약품 (비타민B1)",
+      "category": "otc_drug",
+      "unit": "정",
+      "label_dose": 1,
+      "now_dose": 1,
+      "plan_dose": null,
+      "plan_note": null
+    }
+  ],
+  "plan_summary": "새로 살 제품 없이 개수만 바꿉니다.",
+  "nutrients": [
+    {
+      "id": "magnesium",
+      "name": "마그네슘",
+      "group": "mineral",
+      "unit": "mg",
+      "rda": 280,
+      "rda_basis": "KDRI 여 30-49세",
+      "ul": 350,
+      "ul_basis": "보충제만",
+      "ref_range": null,
+      "source_url": "https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/",
+      "source_label": "NIH ODS"
+    },
+    {
+      "id": "calcium",
+      "name": "칼슘",
+      "group": "mineral",
+      "unit": "mg",
+      "rda": 700,
+      "rda_basis": "KDRI 여 30-49세",
+      "ul": 2500,
+      "ul_basis": "식사 포함",
+      "ref_range": null,
+      "source_url": "https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/",
+      "source_label": "NIH ODS"
+    },
+    {
+      "id": "zinc",
+      "name": "아연",
+      "group": "mineral",
+      "unit": "mg",
+      "rda": 8,
+      "rda_basis": "KDRI 여 30-49세",
+      "ul": 35,
+      "ul_basis": "식사 포함",
+      "ref_range": null,
+      "source_url": "https://ods.od.nih.gov/factsheets/Zinc-HealthProfessional/",
+      "source_label": "NIH ODS"
+    },
+    {
+      "id": "iron",
+      "name": "철",
+      "group": "mineral",
+      "unit": "mg",
+      "rda": 14,
+      "rda_basis": "KDRI 여 30-49세",
+      "ul": 45,
+      "ul_basis": "식사 포함",
+      "ref_range": null,
+      "source_url": "https://ods.od.nih.gov/factsheets/Iron-HealthProfessional/",
+      "source_label": "NIH ODS"
+    },
+    {
+      "id": "vitamin_a",
+      "name": "비타민 A",
+      "group": "vitamin",
+      "unit": "µg RAE",
+      "rda": 650,
+      "rda_basis": "KDRI 여 30-49세",
+      "ul": 3000,
+      "ul_basis": "식사 포함",
+      "ref_range": null,
+      "source_url": "https://ods.od.nih.gov/factsheets/VitaminA-HealthProfessional/",
+      "source_label": "NIH ODS"
+    },
+    {
+      "id": "vitamin_d",
+      "name": "비타민 D",
+      "group": "vitamin",
+      "unit": "µg",
+      "rda": 10,
+      "rda_basis": "KDRI 여 30-49세",
+      "ul": 100,
+      "ul_basis": "식사 포함",
+      "ref_range": null,
+      "source_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/",
+      "source_label": "NIH ODS"
+    },
+    {
+      "id": "folate",
+      "name": "엽산",
+      "group": "vitamin",
+      "unit": "µg DFE",
+      "rda": 400,
+      "rda_basis": "KDRI 여 30-49세",
+      "ul": 1000,
+      "ul_basis": "보충제만",
+      "ref_range": null,
+      "source_url": "https://ods.od.nih.gov/factsheets/Folate-HealthProfessional/",
+      "source_label": "NIH ODS"
+    },
+    {
+      "id": "thiamine",
+      "name": "비타민 B1 (티아민)",
+      "group": "vitamin",
+      "unit": "mg",
+      "rda": 1.1,
+      "rda_basis": "KDRI 여 30-49세",
+      "ul": null,
+      "ul_basis": null,
+      "ref_range": null,
+      "source_url": null,
+      "source_label": null
+    },
+    {
+      "id": "epa_dha",
+      "name": "EPA+DHA (오메가3)",
+      "group": "functional",
+      "unit": "mg",
+      "rda": null,
+      "rda_basis": null,
+      "ul": null,
+      "ul_basis": null,
+      "ref_range": "권장량 없음 (참고 범위는 리포트 근거 참조)",
+      "source_url": "https://ods.od.nih.gov/factsheets/Omega3FattyAcids-HealthProfessional/",
+      "source_label": "NIH ODS"
+    }
+  ],
+  "per_unit": [
+    {
+      "product": "p1",
+      "nutrient": "calcium",
+      "amount": 100
+    },
+    {
+      "product": "p1",
+      "nutrient": "magnesium",
+      "amount": 50
+    },
+    {
+      "product": "p1",
+      "nutrient": "zinc",
+      "amount": 4
+    },
+    {
+      "product": "p1",
+      "nutrient": "iron",
+      "amount": 6
+    },
+    {
+      "product": "p1",
+      "nutrient": "vitamin_a",
+      "amount": 300
+    },
+    {
+      "product": "p1",
+      "nutrient": "vitamin_d",
+      "amount": 5
+    },
+    {
+      "product": "p1",
+      "nutrient": "thiamine",
+      "amount": 0.6
+    },
+    {
+      "product": "p2",
+      "nutrient": "calcium",
+      "amount": 200
+    },
+    {
+      "product": "p2",
+      "nutrient": "magnesium",
+      "amount": 120
+    },
+    {
+      "product": "p2",
+      "nutrient": "vitamin_d",
+      "amount": 12.5
+    },
+    {
+      "product": "p2",
+      "nutrient": "zinc",
+      "amount": 2
+    },
+    {
+      "product": "p3",
+      "nutrient": "epa_dha",
+      "amount": 600
+    },
+    {
+      "product": "p4",
+      "nutrient": "thiamine",
+      "amount": 25
+    }
+  ],
+  "cautions": [
+    {
+      "text": "이 파일은 가상 제품과 가상 인물로 만든 예시입니다. 실제 제품의 성분값이 아닙니다.",
+      "source_url": null
+    },
+    {
+      "text": "마그네슘 상한은 보충제에서 들어오는 양에만 적용됩니다. 다른 성분은 식사까지 합친 기준이라 식사를 더하면 부족 판정이 달라질 수 있습니다.",
+      "source_url": "https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/"
+    },
+    {
+      "text": "칼슘이 든 제품과 철이 든 제품은 시간을 나눠 드시는 것이 좋습니다.",
+      "source_url": "https://ods.od.nih.gov/factsheets/Iron-HealthProfessional/"
+    },
+    {
+      "text": "가상 비타민B정은 일반의약품이라 복용량 조정 안내를 하지 않습니다. 의사·약사와 상담하세요.",
+      "source_url": null
+    }
+  ],
+  "disclaimer_md": "## ⚠️ 면책 조항\n\n**본 분석은 의학적 조언이 아닙니다.**\n\n- 본 리포트는 공개된 연구 자료와 영양 정보를 기반으로 한 **참고용 분석**이며, 진단·치료·처방을 대체하지 않습니다.\n- **기저질환, 임신·수유 중이거나 복용 중인 약물이 있는 경우** 반드시 의사·약사와 상담 후 보충제 복용을 결정하세요.\n- 본 분석은 대체제품·용량에 대한 일반 정보를 제공하며, **개인별 체질·건강 상태·유전적 차이를 모두 반영하지 못합니다.**\n- 제품명·브랜드는 **비교 목적의 예시**이며, 특정 제품을 추천·보증하지 않습니다.\n- 가격·유통·재고 정보는 조회 시점 기준이며 변동될 수 있습니다.\n- **본 분석의 정확성, 완전성, 최신성에 대한 어떠한 법적 책임도 지지 않습니다.**\n- 응급 상황 또는 심각한 증상이 있을 경우 즉시 의료기관에 연락하십시오.\n\n> 분석 결과에 대한 문제 제기 또는 정정 요청은 이 스킬을 제공한 운영자/저장소에 문의하세요."
+}
