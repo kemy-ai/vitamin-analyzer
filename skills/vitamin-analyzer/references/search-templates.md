@@ -119,6 +119,7 @@ https://ods.od.nih.gov/factsheets/{NutrientName}-HealthProfessional/
 ### 2-3. Fallback
 
 - 404 또는 0건 → Tier 2 Examine 이동
+- 403(접근 거부) → 같은 URL을 다른 조회 도구(다른 fetch 도구, 검색 결과 스니펫)로 1회 재시도. 그래도 실패하면 Tier 2로 이동하고, `rda-table.md` §33의 URL을 인용할 때는 "실접속 미확인"을 함께 표시
 - 식물추출물·특수 성분(실리마린 등)은 NIH ODS에 없음 → Examine 우선
 
 ---
